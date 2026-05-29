@@ -23,7 +23,7 @@ export default function RiskTable({ risks }: RiskTableProps) {
             <tr>
               <th>Severity</th>
               <th>Confidence</th>
-              <th>File</th>
+              <th>Location</th>
               <th>Type</th>
               <th>Evidence</th>
               <th>Suggestion</th>
@@ -34,9 +34,9 @@ export default function RiskTable({ risks }: RiskTableProps) {
               <tr key={`${risk.file ?? "pr"}-${risk.type}-${index}`}>
                 <td><span className={`severity severity-${risk.severity.toLowerCase()}`}>{risk.severity}</span></td>
                 <td>{risk.confidence}</td>
-                <td>{risk.file ?? "PR-level"}</td>
+                <td>{risk.file ? `${risk.file}${risk.line ? `:${risk.line}` : ""}` : "PR-level"}</td>
                 <td>{risk.type}</td>
-                <td>{risk.evidence ?? "-"}</td>
+                <td><code className="evidence-code">{risk.evidence ?? "-"}</code></td>
                 <td>{risk.suggestion}</td>
               </tr>
             ))}

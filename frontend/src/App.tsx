@@ -10,6 +10,7 @@ import AiReviewPanel from "./components/AiReviewPanel";
 import MarkdownReport from "./components/MarkdownReport";
 import LoadingState from "./components/LoadingState";
 import ErrorBanner from "./components/ErrorBanner";
+import AnalysisTraceCard from "./components/AnalysisTraceCard";
 
 export default function App() {
   const [prUrl, setPrUrl] = useState("");
@@ -85,10 +86,15 @@ export default function App() {
 
       {!loading && result ? (
         <>
-          <section className="card">
+          <section className="card result-hero">
             <h3>分析结论</h3>
             <p>{result.message}</p>
             <p className="muted">{result.summary}</p>
+            <div className="hero-badges">
+              <span className="badge">Review Mode: {result.review_mode}</span>
+              <span className="badge">AI Status: {result.analysis_trace.ai_status}</span>
+              <span className="badge">Rules Hit: {Object.keys(result.analysis_trace.rule_hits_by_type).length}</span>
+            </div>
           </section>
 
           <div className="grid-two">
@@ -117,7 +123,11 @@ export default function App() {
             </section>
           </div>
 
-          <RiskSummaryCard riskSummary={result.risk_summary} />
+          <div className="grid-two">
+            <RiskSummaryCard riskSummary={result.risk_summary} />
+            <AnalysisTraceCard analysisTrace={result.analysis_trace} />
+          </div>
+
           <RiskTable risks={result.risks} />
           <AiReviewPanel aiReview={result.ai_review} reviewMode={result.review_mode} />
           <MarkdownReport
