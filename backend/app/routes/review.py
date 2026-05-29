@@ -59,6 +59,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
     )
     message = "Fetched PR metadata and changed files successfully. Rule-based risk analysis completed."
     review_mode = "rule_based"
+    ai_status = "not_requested"
     ai_review = None
 
     if payload.use_ai:
@@ -82,19 +83,29 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
 
         if ai_configured and ai_review.get("enabled"):
             review_mode = "ai_assisted"
+            ai_status = "completed"
             message = "Fetched PR metadata and changed files successfully. AI-assisted review completed."
         elif not ai_configured:
             review_mode = "ai_fallback"
+            ai_status = "config_missing"
             message = (
                 "Fetched PR metadata and changed files successfully. "
                 "AI config is missing, fallback to rule-based review."
             )
         else:
             review_mode = "ai_fallback"
+            ai_status = "fallback_error"
             message = (
                 "Fetched PR metadata and changed files successfully. "
                 "AI review failed, fallback to rule-based review."
             )
+
+    analysis_trace = {
+        "rule_hits_by_type": rule_result["rule_hits_by_type"],
+        "patch_truncated_file_count": sum(1 for file_item in context["files"] if file_item.get("patch_truncated")),
+        "context_source": "github_api_pr_and_files",
+        "ai_status": ai_status,
+    }
 
     summary = rule_summary
     if ai_review and ai_review.get("enabled") and ai_review.get("pr_summary"):
@@ -108,6 +119,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         risks=rule_result["risks"],
         suggestions=rule_result["suggestions"],
         risk_summary=rule_result["risk_summary"],
+        analysis_trace=analysis_trace,
         ai_review=ai_review,
     )
 
@@ -122,6 +134,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         suggestions=rule_result["suggestions"],
         risk_summary=rule_result["risk_summary"],
         ai_review=ai_review,
+        analysis_trace=analysis_trace,
         markdown_report=markdown_report,
         review_mode=review_mode,
         use_ai=payload.use_ai,

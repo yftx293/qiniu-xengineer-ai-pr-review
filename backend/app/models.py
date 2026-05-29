@@ -100,6 +100,13 @@ class AIReviewResult(BaseModel):
     confidence: str
 
 
+class AnalysisTrace(BaseModel):
+    rule_hits_by_type: dict[str, int]
+    patch_truncated_file_count: int
+    context_source: str
+    ai_status: str
+
+
 class ReviewResponse(BaseModel):
     message: str
     source: ParsedPRInfo
@@ -111,6 +118,7 @@ class ReviewResponse(BaseModel):
     suggestions: list[str]
     risk_summary: RiskSummary
     ai_review: AIReviewResult | None
+    analysis_trace: AnalysisTrace
     markdown_report: str
     review_mode: str
     use_ai: bool
