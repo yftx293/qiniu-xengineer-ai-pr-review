@@ -1,8 +1,10 @@
 ﻿from fastapi import APIRouter, HTTPException, status
 
 from app.models import ParsePRUrlRequest, ParsedPRInfo, ReviewRequest, ReviewResponse
+from app.services.diff_parser import DiffParser
 from app.services.github_service import GitHubAPIError, GitHubService
 from app.services.pr_url_parser import PRUrlParseError, parse_github_pr_url
+from app.services.risk_analyzer import RiskAnalyzer
 
 router = APIRouter(prefix="/api", tags=["review"])
 
@@ -44,7 +46,20 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Internal server error.") from exc
 
-    message = "Fetched PR metadata and changed files successfully. AI review will be implemented in the next stage."
+    parsed_diffs = DiffParser.parse_files(context["files"])
+    risk_result = RiskAnalyzer().analyze_files(context["files"], parsed_diffs)
+    risk_summary = risk_result["risk_summary"]
+
+    message = "Fetched PR metadata and changed files successfully. Rule-based risk analysis completed."
+    if payload.use_ai:
+        message = (
+            f"{message} AI review is not implemented in this stage, using rule-based analysis only."
+        )
+
+    summary = (
+        "Rule-based risk analysis found "
+        f"{risk_summary['total']} risks, including {risk_summary['high']} high risk items."
+    )
 
     return ReviewResponse(
         message=message,
@@ -52,6 +67,9 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         pr=context["pr"],
         files=context["files"],
         stats=context["stats"],
-        summary="Fetched PR metadata and changed files successfully. AI summary will be implemented in the next stage.",
+        summary=summary,
+        risks=risk_result["risks"],
+        suggestions=risk_result["suggestions"],
+        risk_summary=risk_summary,
         use_ai=payload.use_ai,
     )

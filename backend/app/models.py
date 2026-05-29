@@ -70,6 +70,25 @@ class PullRequestContext(BaseModel):
     stats: PullRequestStats
 
 
+class RiskItem(BaseModel):
+    file: str | None
+    line: int | None
+    severity: str
+    type: str
+    message: str
+    evidence: str | None
+    suggestion: str
+    confidence: str
+
+
+class RiskSummary(BaseModel):
+    total: int
+    high: int
+    medium: int
+    low: int
+    has_blocking_risk: bool
+
+
 class ReviewResponse(BaseModel):
     message: str
     source: ParsedPRInfo
@@ -77,4 +96,7 @@ class ReviewResponse(BaseModel):
     files: list[ChangedFile]
     stats: PullRequestStats
     summary: str
+    risks: list[RiskItem]
+    suggestions: list[str]
+    risk_summary: RiskSummary
     use_ai: bool
