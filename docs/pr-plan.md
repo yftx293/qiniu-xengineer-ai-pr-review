@@ -28,3 +28,23 @@
 
 - PR 11：fix: improve error handling
 - PR 12：docs: add final README and demo video link
+
+## 比赛冲刺阶段补充计划
+
+- PR 7（新）：docs: finalize README, architecture, and demo materials
+- PR 8（新）：test: add backend unit and route coverage
+- PR 9（新）：feat: add analysis trace and explainability output
+- PR 10（新）：feat: polish frontend dashboard for demo presentation
+
+## PR 描述模板要求
+
+每个新 PR 描述统一包含以下结构：
+
+- 标题
+- 背景
+- 本次只解决什么问题
+- 实现思路
+- 影响范围
+- 测试方式
+- 截图或结果示例
+- 是否影响主流程
