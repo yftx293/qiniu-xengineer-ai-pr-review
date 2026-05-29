@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { analyzePullRequest } from "./api";
 import type { ReviewResponse } from "./types";
@@ -96,6 +96,16 @@ export default function App() {
               <span className="badge">Rules Hit: {Object.keys(result.analysis_trace.rule_hits_by_type).length}</span>
             </div>
           </section>
+
+          {result.analysis_trace.patch_truncated_file_count > 0 ? (
+            <section className="card warning-card">
+              <h3>上下文截断提示</h3>
+              <p>
+                本次分析中有 {result.analysis_trace.patch_truncated_file_count} 个文件的 patch 内容被截断。
+                当前结果仍可用于快速 Review，但对于超大 PR，建议结合 GitHub 原始 Diff 做二次人工确认。
+              </p>
+            </section>
+          ) : null}
 
           <div className="grid-two">
             <PrInfoCard pr={result.pr} />
