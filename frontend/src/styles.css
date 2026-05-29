@@ -48,6 +48,13 @@ body {
   margin-bottom: 16px;
 }
 
+.result-hero {
+  border: 1px solid #dbeafe;
+  background:
+    radial-gradient(circle at top right, rgba(147, 197, 253, 0.3), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
 .card h2,
 .card h3,
 .card h4 {
@@ -227,6 +234,13 @@ body {
   margin-bottom: 8px;
 }
 
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .badge {
   border-radius: 999px;
   padding: 4px 10px;
@@ -265,6 +279,16 @@ body {
 
 .table-wrap {
   overflow-x: auto;
+}
+
+.evidence-code {
+  display: inline-block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .risk-table {
@@ -309,6 +333,59 @@ body {
   gap: 12px;
   margin-bottom: 8px;
   color: #334155;
+}
+
+.flow-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.flow-step {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.flow-arrow {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.mini-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rule-hit-list h4 {
+  margin-bottom: 10px;
+}
+
+.rule-hit-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.rule-hit-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .ai-block {
@@ -361,6 +438,10 @@ body {
 
 @media (max-width: 900px) {
   .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-kv-grid {
     grid-template-columns: 1fr;
   }
 
