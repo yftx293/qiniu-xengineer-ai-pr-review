@@ -16,9 +16,9 @@ function formatAiStatus(value: string): string {
     case "completed":
       return "AI review completed";
     case "config_missing":
-      return "AI config missing, fallback to rules";
+      return "AI config missing, fallback enabled";
     case "fallback_error":
-      return "AI failed, fallback to rules";
+      return "AI request failed, using rule fallback";
     case "not_requested":
       return "AI not requested";
     default:
@@ -26,21 +26,34 @@ function formatAiStatus(value: string): string {
   }
 }
 
+function formatRiskType(riskType: string): string {
+  return riskType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardProps) {
   const ruleEntries = Object.entries(analysisTrace.rule_hits_by_type);
 
   return (
-    <section className="card">
-      <h3>Analysis Flow</h3>
+    <section className="card surface-card">
+      <div className="card-topline">
+        <div>
+          <div className="card-caption">Analysis Trace</div>
+          <h3>分析链路</h3>
+        </div>
+        <span className="badge badge-outline">{formatAiStatus(analysisTrace.ai_status)}</span>
+      </div>
+
       <div className="flow-row">
-        <span className="flow-step">GitHub Fetch</span>
-        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">GitHub Context</span>
+        <span className="flow-arrow">→</span>
         <span className="flow-step">Diff Parse</span>
-        <span className="flow-arrow">{">"}</span>
+        <span className="flow-arrow">→</span>
         <span className="flow-step">Rule Scan</span>
-        <span className="flow-arrow">{">"}</span>
-        <span className="flow-step">AI Summary</span>
-        <span className="flow-arrow">{">"}</span>
+        <span className="flow-arrow">→</span>
+        <span className="flow-step">AI Review</span>
+        <span className="flow-arrow">→</span>
         <span className="flow-step">Markdown Report</span>
       </div>
 
@@ -64,18 +77,18 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
       </div>
 
       <div className="rule-hit-list">
-        <h4>Rule Hit Counts</h4>
+        <h4>规则命中统计</h4>
         {ruleEntries.length ? (
           <ul>
             {ruleEntries.map(([riskType, count]) => (
               <li key={riskType}>
-                <span>{riskType}</span>
+                <span>{formatRiskType(riskType)}</span>
                 <strong>{count}</strong>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted">No rule hits in this result. Review depends more on AI summary and manual checks.</p>
+          <p className="muted">当前没有命中规则风险项，建议重点结合业务语义和上下文进行人工复查。</p>
         )}
       </div>
     </section>

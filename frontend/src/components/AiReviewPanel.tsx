@@ -1,4 +1,4 @@
-﻿import type { AIReviewResult } from "../types";
+import type { AIReviewResult } from "../types";
 
 interface AiReviewPanelProps {
   aiReview: AIReviewResult | null;
@@ -22,8 +22,9 @@ function renderList(items: string[]) {
   if (!items.length) {
     return <p className="muted">暂无内容</p>;
   }
+
   return (
-    <ul>
+    <ul className="insight-list">
       {items.map((item, index) => (
         <li key={`${item}-${index}`}>{item}</li>
       ))}
@@ -34,21 +35,26 @@ function renderList(items: string[]) {
 export default function AiReviewPanel({ aiReview, reviewMode }: AiReviewPanelProps) {
   if (!aiReview) {
     return (
-      <section className="card">
-        <h3>AI Review</h3>
+      <section className="card surface-card">
+        <div className="card-caption">AI Review</div>
+        <h3>AI 审查建议</h3>
         <p className="muted">当前为规则模式，未启用 AI Review。</p>
       </section>
     );
   }
 
   return (
-    <section className="card">
-      <h3>AI Review</h3>
-      <div className="ai-meta">
-        <span>模式: <strong>{formatReviewMode(reviewMode)}</strong></span>
-        <span>启用状态: <strong>{aiReview.enabled ? "已启用" : "未启用"}</strong></span>
-        <span>整体风险: <strong>{aiReview.overall_risk_level}</strong></span>
-        <span>置信度: <strong>{aiReview.confidence}</strong></span>
+    <section className="card surface-card">
+      <div className="card-topline">
+        <div>
+          <div className="card-caption">AI Review</div>
+          <h3>AI 审查建议</h3>
+        </div>
+        <div className="workspace-badges">
+          <span className="badge badge-outline">{formatReviewMode(reviewMode)}</span>
+          <span className="badge badge-outline">Risk: {aiReview.overall_risk_level}</span>
+          <span className="badge badge-outline">Confidence: {aiReview.confidence}</span>
+        </div>
       </div>
 
       {aiReview.error ? <p className="error-inline">{aiReview.error}</p> : null}
@@ -58,14 +64,16 @@ export default function AiReviewPanel({ aiReview, reviewMode }: AiReviewPanelPro
         <p>{aiReview.pr_summary || "暂无 AI 总结"}</p>
       </div>
 
-      <div className="ai-block">
-        <h4>主要变更</h4>
-        {renderList(aiReview.main_changes)}
-      </div>
+      <div className="ai-section-grid">
+        <div className="ai-block">
+          <h4>主要变更</h4>
+          {renderList(aiReview.main_changes)}
+        </div>
 
-      <div className="ai-block">
-        <h4>风险分析</h4>
-        {renderList(aiReview.risk_analysis)}
+        <div className="ai-block">
+          <h4>风险分析</h4>
+          {renderList(aiReview.risk_analysis)}
+        </div>
       </div>
 
       <div className="ai-block">
