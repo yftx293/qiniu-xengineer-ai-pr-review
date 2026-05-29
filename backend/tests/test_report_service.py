@@ -16,6 +16,12 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
         risks=[],
         suggestions=["Add tests"],
         risk_summary={"total": 0, "high": 0, "medium": 0, "low": 0, "has_blocking_risk": False},
+        analysis_trace={
+            "rule_hits_by_type": {},
+            "patch_truncated_file_count": 0,
+            "context_source": "github_api_pr_and_files",
+            "ai_status": "completed",
+        },
         ai_review={
             "enabled": True,
             "error": None,
@@ -30,6 +36,8 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
     assert "AI summary" in report
     assert "Verify auth edge cases" in report
     assert "未识别到风险项" in report
+    assert "## 7. 分析链路" in report
+    assert "github_api_pr_and_files" in report
 
 
 def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
@@ -56,9 +64,17 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
         ],
         suggestions=["Run dependency audit"],
         risk_summary={"total": 1, "high": 0, "medium": 1, "low": 0, "has_blocking_risk": False},
+        analysis_trace={
+            "rule_hits_by_type": {"Dependency Change": 1},
+            "patch_truncated_file_count": 1,
+            "context_source": "github_api_pr_and_files",
+            "ai_status": "not_requested",
+        },
         ai_review=None,
     )
 
     assert "Rule summary" in report
     assert "Run dependency audit" in report
     assert "| Medium | High | requirements.txt | Dependency Change |" in report
+    assert "## 8. 分析限制" in report
+    assert "patch 截断文件数: 1" in report

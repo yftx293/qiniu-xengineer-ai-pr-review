@@ -13,6 +13,7 @@ class ReportService:
         risks: list[dict[str, Any]],
         suggestions: list[str],
         risk_summary: dict[str, Any],
+        analysis_trace: dict[str, Any],
         ai_review: dict[str, Any] | None,
     ) -> str:
         final_summary = summary
@@ -68,7 +69,27 @@ class ReportService:
             lines.append("- 暂无建议。")
         lines.append("")
 
-        lines.append("## 7. 说明")
+        lines.append("## 7. 分析链路")
+        lines.append(f"- context_source: {analysis_trace.get('context_source', 'unknown')}")
+        lines.append(f"- ai_status: {analysis_trace.get('ai_status', 'unknown')}")
+        lines.append(f"- patch 截断文件数: {analysis_trace.get('patch_truncated_file_count', 0)}")
+
+        rule_hits = analysis_trace.get("rule_hits_by_type", {}) or {}
+        if rule_hits:
+            lines.append("- rule_hits_by_type:")
+            for risk_type, count in sorted(rule_hits.items()):
+                lines.append(f"  - {risk_type}: {count}")
+        else:
+            lines.append("- rule_hits_by_type: none")
+        lines.append("")
+
+        lines.append("## 8. 分析限制")
+        lines.append("- GitHub API 可能受未认证 rate limit 影响。")
+        lines.append("- 超长 patch 会被截断，极大 PR 的上下文可能不完整。")
+        lines.append("- AI 结果仅作辅助参考，最终仍需人工确认。")
+        lines.append("")
+
+        lines.append("## 9. 说明")
         lines.append(
             "本报告由规则分析和可选 AI 生成，仅作为辅助 Review 参考，最终仍需人工确认后再做合并决策。"
         )
