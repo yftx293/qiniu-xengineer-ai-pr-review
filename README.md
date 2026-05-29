@@ -26,7 +26,7 @@ CodeLens 是一个面向开发者的 AI Pull Request 代码评审助手。本项
 - 风险代码识别
 - Review 建议生成
 - Markdown Review 报告复制
-
+本项目第一阶段先完成 GitHub PR 数据获取与基础 Review 流程，后续逐步补充风险识别、AI 总结和前端展示能力。
 ## 3. 技术栈
 
 前端：
