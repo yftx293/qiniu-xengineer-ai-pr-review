@@ -14,34 +14,47 @@ function formatContextSource(value: string): string {
 function formatAiStatus(value: string): string {
   switch (value) {
     case "completed":
-      return "AI 已完成分析";
+      return "AI review completed";
     case "config_missing":
-      return "AI 未配置，已回退到规则模式";
+      return "AI config missing, fallback enabled";
     case "fallback_error":
-      return "AI 调用失败，已回退到规则模式";
+      return "AI request failed, using rule fallback";
     case "not_requested":
-      return "未启用 AI";
+      return "AI not requested";
     default:
       return value || "Unknown";
   }
+}
+
+function formatRiskType(riskType: string): string {
+  return riskType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardProps) {
   const ruleEntries = Object.entries(analysisTrace.rule_hits_by_type);
 
   return (
-    <section className="card">
-      <h3>分析链路</h3>
+    <section className="card surface-card">
+      <div className="card-topline">
+        <div>
+          <div className="card-caption">Analysis Trace</div>
+          <h3>分析链路</h3>
+        </div>
+        <span className="badge badge-outline">{formatAiStatus(analysisTrace.ai_status)}</span>
+      </div>
+
       <div className="flow-row">
-        <span className="flow-step">GitHub 获取</span>
+        <span className="flow-step">GitHub Context</span>
         <span className="flow-arrow">→</span>
-        <span className="flow-step">Diff 解析</span>
+        <span className="flow-step">Diff Parse</span>
         <span className="flow-arrow">→</span>
-        <span className="flow-step">规则识别</span>
+        <span className="flow-step">Rule Scan</span>
         <span className="flow-arrow">→</span>
-        <span className="flow-step">AI 总结</span>
+        <span className="flow-step">AI Review</span>
         <span className="flow-arrow">→</span>
-        <span className="flow-step">Markdown 报告</span>
+        <span className="flow-step">Markdown Report</span>
       </div>
 
       <div className="mini-kv-grid">
@@ -69,13 +82,13 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
           <ul>
             {ruleEntries.map(([riskType, count]) => (
               <li key={riskType}>
-                <span>{riskType}</span>
+                <span>{formatRiskType(riskType)}</span>
                 <strong>{count}</strong>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted">当前未命中规则风险，结果更依赖人工复核与 AI 总结。</p>
+          <p className="muted">当前没有命中规则风险项，建议重点结合业务语义和上下文进行人工复查。</p>
         )}
       </div>
     </section>
