@@ -30,7 +30,51 @@ class ReviewRequest(BaseModel):
     use_ai: bool = False
 
 
+class ChangedFile(BaseModel):
+    filename: str
+    status: str
+    additions: int
+    deletions: int
+    changes: int
+    raw_url: str
+    blob_url: str
+    patch: str
+    patch_truncated: bool
+
+
+class PullRequestInfo(BaseModel):
+    title: str
+    number: int
+    state: str
+    author: str
+    html_url: str
+    base_branch: str
+    head_branch: str
+    created_at: str
+    updated_at: str
+    additions: int
+    deletions: int
+    changed_files: int
+
+
+class PullRequestStats(BaseModel):
+    file_count: int
+    total_additions: int
+    total_deletions: int
+    total_changes: int
+
+
+class PullRequestContext(BaseModel):
+    pr: PullRequestInfo
+    files: list[ChangedFile]
+    stats: PullRequestStats
+
+
 class ReviewResponse(BaseModel):
     message: str
-    pr: ParsedPRInfo
+    source: ParsedPRInfo
+    pr: PullRequestInfo
+    files: list[ChangedFile]
+    stats: PullRequestStats
+    summary: str
     use_ai: bool
