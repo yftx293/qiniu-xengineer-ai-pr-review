@@ -7,8 +7,8 @@ from app.routes.review import router as review_router
 
 app = FastAPI(
     title="CodeLens AI PR Review Assistant Backend",
-    version="0.1.0",
-    description="Phase 2 backend foundation for PR URL parsing and review placeholder APIs.",
+    version="0.2.0",
+    description="Backend service for PR URL parsing and GitHub PR context fetching.",
 )
 
 app.add_middleware(

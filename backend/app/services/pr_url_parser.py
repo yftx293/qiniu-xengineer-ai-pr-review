@@ -10,11 +10,6 @@ class PRUrlParseError(ValueError):
     """Raised when a GitHub PR URL cannot be parsed."""
 
 
-# Supports:
-# - https://github.com/owner/repo/pull/123
-# - http://github.com/owner/repo/pull/123
-# - https://github.com/owner/repo/pull/123/files
-# - https://github.com/owner/repo/pull/123?x=y
 PR_PATH_PATTERN = re.compile(r"^/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)(?:/.*)?$")
 
 
@@ -41,13 +36,10 @@ def parse_github_pr_url(pr_url: str) -> ParsedPRInfo:
     repo = match.group("repo")
     pull_number = int(match.group("number"))
 
-    html_url = f"https://github.com/{owner}/{repo}/pull/{pull_number}"
-    api_url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}"
-
     return ParsedPRInfo(
         owner=owner,
         repo=repo,
         pull_number=pull_number,
-        api_url=api_url,
-        html_url=html_url,
+        api_url=f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}",
+        html_url=f"https://github.com/{owner}/{repo}/pull/{pull_number}",
     )
