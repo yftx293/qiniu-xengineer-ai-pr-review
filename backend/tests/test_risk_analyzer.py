@@ -27,6 +27,7 @@ def test_risk_analyzer_detects_high_risk_patterns() -> None:
     assert "Potential SQL Injection" in types
     assert "Swallowed Exception" in types
     assert result["risk_summary"]["high"] >= 2
+    assert result["rule_hits_by_type"]["Hardcoded Secret"] == 1
 
 
 def test_risk_analyzer_flags_missing_tests_for_large_changes() -> None:
@@ -44,3 +45,4 @@ def test_risk_analyzer_flags_missing_tests_for_large_changes() -> None:
     result = RiskAnalyzer().analyze_files(files, DiffParser.parse_files(files))
 
     assert any(risk["type"] == "Missing Tests" for risk in result["risks"])
+    assert result["rule_hits_by_type"]["Missing Tests"] == 1

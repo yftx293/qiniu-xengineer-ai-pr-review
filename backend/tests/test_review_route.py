@@ -65,6 +65,9 @@ def test_review_route_returns_rule_based_response(monkeypatch) -> None:
     assert response.status_code == 200
     assert payload["review_mode"] == "rule_based"
     assert payload["risk_summary"]["total"] >= 1
+    assert payload["analysis_trace"]["context_source"] == "github_api_pr_and_files"
+    assert payload["analysis_trace"]["ai_status"] == "not_requested"
+    assert payload["analysis_trace"]["patch_truncated_file_count"] == 0
     assert payload["markdown_report"]
 
 
@@ -112,6 +115,7 @@ def test_review_route_falls_back_when_ai_config_is_missing(monkeypatch) -> None:
     assert response.status_code == 200
     assert payload["review_mode"] == "ai_fallback"
     assert payload["ai_review"]["enabled"] is False
+    assert payload["analysis_trace"]["ai_status"] == "config_missing"
 
 
 def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
@@ -157,3 +161,4 @@ def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
     assert response.status_code == 200
     assert payload["review_mode"] == "ai_assisted"
     assert payload["summary"] == "AI summary for review route"
+    assert payload["analysis_trace"]["ai_status"] == "completed"

@@ -48,6 +48,7 @@ class RiskAnalyzer:
             "risks": sorted_risks,
             "suggestions": self.build_suggestions(sorted_risks),
             "risk_summary": self.build_risk_summary(sorted_risks),
+            "rule_hits_by_type": self.build_rule_hits_by_type(sorted_risks),
         }
 
     def analyze_file(self, file_item: dict[str, Any], parsed_diff: dict[str, Any]) -> list[dict[str, Any]]:
@@ -102,6 +103,15 @@ class RiskAnalyzer:
             "low": low,
             "has_blocking_risk": high > 0,
         }
+
+    def build_rule_hits_by_type(self, risks: list[dict[str, Any]]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for risk in risks:
+            risk_type = str(risk.get("type", "")).strip()
+            if not risk_type:
+                continue
+            counts[risk_type] = counts.get(risk_type, 0) + 1
+        return counts
 
     def _detect_hardcoded_secret(self, filename: str, added_lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
         risks: list[dict[str, Any]] = []
