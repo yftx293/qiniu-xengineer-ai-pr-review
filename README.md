@@ -232,6 +232,31 @@ npm run dev
   - 风险表格与 AI Review 展示页
   - Markdown 报告复制效果页
 
+#### README 截图展示占位
+
+以下内容可在截图准备完成后直接替换为真实图片链接：
+
+```markdown
+![Review Form](./screenshots/review-form.png)
+![Review Result Overview](./screenshots/review-result-overview.png)
+![Risk Table](./screenshots/review-risk-table.png)
+![Markdown Report](./screenshots/review-markdown-report.png)
+```
+
+#### Demo 讲解脚本
+
+- 录制讲解脚本见：`docs/demo-script.md`
+- 建议控制在 2 到 3 分钟内，优先讲清“问题背景、分析流程、风险识别、AI 建议、Markdown 报告输出”这 5 个部分
+
+## 最终提交前检查清单
+
+- 公开仓库链接可正常访问，且主分支代码可运行
+- README 已包含项目简介、运行方式、技术方案、模型说明和未来扩展方向
+- README 已预留 Demo 视频链接位置，并可在录制完成后直接替换
+- `screenshots/` 目录中的截图素材已整理完毕，可直接用于 README 或答辩展示
+- 演示流程已覆盖 PR 输入、规则分析、AI Review、Markdown 报告复制
+- 提交记录与 PR 节奏符合比赛要求，避免只有最后一天集中提交
+
 ## 开发过程与 PR 留痕
 
 项目采用“小步提交、持续交付、按功能拆分 PR”的方式开发，当前已完成的主线包括：
