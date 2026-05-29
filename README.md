@@ -232,6 +232,22 @@ npm run dev
   - 风险表格与 AI Review 展示页
   - Markdown 报告复制效果页
 
+#### README 截图展示占位
+
+以下内容可在截图准备完成后直接替换为真实图片链接：
+
+```markdown
+![Review Form](./screenshots/review-form.png)
+![Review Result Overview](./screenshots/review-result-overview.png)
+![Risk Table](./screenshots/review-risk-table.png)
+![Markdown Report](./screenshots/review-markdown-report.png)
+```
+
+#### Demo 讲解脚本
+
+- 录制讲解脚本见：`docs/demo-script.md`
+- 建议控制在 2 到 3 分钟内，优先讲清“问题背景、分析流程、风险识别、AI 建议、Markdown 报告输出”这 5 个部分
+
 ## 最终提交前检查清单
 
 - 公开仓库链接可正常访问，且主分支代码可运行
