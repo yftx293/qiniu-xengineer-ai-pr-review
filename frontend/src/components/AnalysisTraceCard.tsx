@@ -14,13 +14,13 @@ function formatContextSource(value: string): string {
 function formatAiStatus(value: string): string {
   switch (value) {
     case "completed":
-      return "AI 已完成分析";
+      return "AI review completed";
     case "config_missing":
-      return "AI 未配置，已回退到规则模式";
+      return "AI config missing, fallback to rules";
     case "fallback_error":
-      return "AI 调用失败，已回退到规则模式";
+      return "AI failed, fallback to rules";
     case "not_requested":
-      return "未启用 AI";
+      return "AI not requested";
     default:
       return value || "Unknown";
   }
@@ -31,17 +31,17 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
 
   return (
     <section className="card">
-      <h3>分析链路</h3>
+      <h3>Analysis Flow</h3>
       <div className="flow-row">
-        <span className="flow-step">GitHub 获取</span>
-        <span className="flow-arrow">→</span>
-        <span className="flow-step">Diff 解析</span>
-        <span className="flow-arrow">→</span>
-        <span className="flow-step">规则识别</span>
-        <span className="flow-arrow">→</span>
-        <span className="flow-step">AI 总结</span>
-        <span className="flow-arrow">→</span>
-        <span className="flow-step">Markdown 报告</span>
+        <span className="flow-step">GitHub Fetch</span>
+        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">Diff Parse</span>
+        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">Rule Scan</span>
+        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">AI Summary</span>
+        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">Markdown Report</span>
       </div>
 
       <div className="mini-kv-grid">
@@ -64,7 +64,7 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
       </div>
 
       <div className="rule-hit-list">
-        <h4>规则命中统计</h4>
+        <h4>Rule Hit Counts</h4>
         {ruleEntries.length ? (
           <ul>
             {ruleEntries.map(([riskType, count]) => (
@@ -75,7 +75,7 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
             ))}
           </ul>
         ) : (
-          <p className="muted">当前未命中规则风险，结果更依赖人工复核与 AI 总结。</p>
+          <p className="muted">No rule hits in this result. Review depends more on AI summary and manual checks.</p>
         )}
       </div>
     </section>

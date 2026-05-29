@@ -48,6 +48,13 @@ body {
   margin-bottom: 16px;
 }
 
+.warning-card {
+  border: 1px solid #fdba74;
+  background:
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.18), transparent 28%),
+    linear-gradient(180deg, #fffaf0 0%, #fff7ed 100%);
+}
+
 .result-hero {
   border: 1px solid #dbeafe;
   background:
@@ -249,6 +256,28 @@ body {
   background: #f8fafc;
 }
 
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
 .badge-high {
   border-color: #b91c1c;
   background: #fee2e2;
@@ -279,6 +308,15 @@ body {
 
 .table-wrap {
   overflow-x: auto;
+}
+
+.inline-empty-state {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #475569;
 }
 
 .evidence-code {
@@ -451,6 +489,10 @@ body {
   }
 
   .card-actions {
+    width: 100%;
+  }
+
+  .filter-chips {
     width: 100%;
   }
 }
