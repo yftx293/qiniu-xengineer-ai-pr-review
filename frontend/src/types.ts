@@ -76,6 +76,13 @@ export interface AIReviewResult {
   confidence: "High" | "Medium" | "Low" | string;
 }
 
+export interface AnalysisTrace {
+  rule_hits_by_type: Record<string, number>;
+  patch_truncated_file_count: number;
+  context_source: string;
+  ai_status: string;
+}
+
 export interface ReviewResponse {
   message: string;
   source: ParsedSource;
@@ -87,6 +94,7 @@ export interface ReviewResponse {
   suggestions: string[];
   risk_summary: RiskSummary;
   ai_review: AIReviewResult | null;
+  analysis_trace: AnalysisTrace;
   markdown_report: string;
   markdownReport?: string;
   review_mode: "rule_based" | "ai_assisted" | "ai_fallback" | string;
