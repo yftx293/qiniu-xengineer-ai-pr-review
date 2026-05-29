@@ -120,7 +120,10 @@ export default function App() {
           <RiskSummaryCard riskSummary={result.risk_summary} />
           <RiskTable risks={result.risks} />
           <AiReviewPanel aiReview={result.ai_review} reviewMode={result.review_mode} />
-          <MarkdownReport report={result.markdown_report} />
+          <MarkdownReport
+            markdown_report={result.markdown_report}
+            markdownReport={result.markdownReport}
+          />
         </>
       ) : null}
     </div>

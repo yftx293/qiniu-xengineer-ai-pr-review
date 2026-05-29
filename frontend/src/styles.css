@@ -85,6 +85,12 @@ body {
   color: #b91c1c;
 }
 
+.token-hint {
+  margin: -2px 0 0;
+  font-size: 0.88rem;
+  color: #9a3412;
+}
+
 .checkbox-row {
   display: flex !important;
   align-items: center;
@@ -131,12 +137,21 @@ body {
 .error-banner {
   margin-bottom: 16px;
   border: 1px solid #fecaca;
+  border-left: 4px solid #e11d48;
   background: #fff1f2;
   color: #9f1239;
   border-radius: 10px;
   padding: 10px 12px;
-  display: flex;
-  gap: 8px;
+}
+
+.error-banner-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.error-banner-message {
+  font-size: 0.95rem;
+  word-break: break-word;
 }
 
 .empty-state {
@@ -321,8 +336,14 @@ body {
   gap: 10px;
 }
 
-.markdown-box {
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.markdown-textarea {
   margin-top: 12px;
+  width: 100%;
   background: #0f172a;
   color: #e2e8f0;
   border-radius: 8px;
@@ -331,6 +352,8 @@ body {
   font-family: Consolas, Monaco, "Courier New", monospace;
   font-size: 0.86rem;
   max-height: 400px;
+  min-height: 220px;
+  resize: vertical;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -344,5 +367,9 @@ body {
   .card-head-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .card-actions {
+    width: 100%;
   }
 }

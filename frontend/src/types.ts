@@ -88,6 +88,7 @@ export interface ReviewResponse {
   risk_summary: RiskSummary;
   ai_review: AIReviewResult | null;
   markdown_report: string;
+  markdownReport?: string;
   review_mode: "rule_based" | "ai_assisted" | "ai_fallback" | string;
   use_ai: boolean;
 }

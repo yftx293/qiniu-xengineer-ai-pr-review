@@ -4,9 +4,9 @@
 
 export default function ErrorBanner({ message }: ErrorBannerProps) {
   return (
-    <section className="error-banner" role="alert">
-      <strong>请求失败：</strong>
-      <span>{message}</span>
+    <section className="error-banner" role="alert" aria-live="assertive">
+      <div className="error-banner-title">请求失败</div>
+      <div className="error-banner-message">{message}</div>
     </section>
   );
 }
