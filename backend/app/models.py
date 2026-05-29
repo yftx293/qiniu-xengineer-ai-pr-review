@@ -89,6 +89,17 @@ class RiskSummary(BaseModel):
     has_blocking_risk: bool
 
 
+class AIReviewResult(BaseModel):
+    enabled: bool
+    error: str | None
+    pr_summary: str
+    main_changes: list[str]
+    risk_analysis: list[str]
+    review_suggestions: list[str]
+    overall_risk_level: str
+    confidence: str
+
+
 class ReviewResponse(BaseModel):
     message: str
     source: ParsedPRInfo
@@ -99,4 +110,7 @@ class ReviewResponse(BaseModel):
     risks: list[RiskItem]
     suggestions: list[str]
     risk_summary: RiskSummary
+    ai_review: AIReviewResult | None
+    markdown_report: str
+    review_mode: str
     use_ai: bool

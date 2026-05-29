@@ -1,9 +1,12 @@
 ﻿from fastapi import APIRouter, HTTPException, status
 
+from app.config import get_settings
 from app.models import ParsePRUrlRequest, ParsedPRInfo, ReviewRequest, ReviewResponse
 from app.services.diff_parser import DiffParser
 from app.services.github_service import GitHubAPIError, GitHubService
+from app.services.llm_reviewer import LLMReviewer
 from app.services.pr_url_parser import PRUrlParseError, parse_github_pr_url
+from app.services.report_service import ReportService
 from app.services.risk_analyzer import RiskAnalyzer
 
 router = APIRouter(prefix="/api", tags=["review"])
@@ -24,9 +27,9 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
     except PRUrlParseError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    service = GitHubService(token=payload.github_token)
+    github_service = GitHubService(token=payload.github_token)
     try:
-        context = service.fetch_pull_request_context(source.owner, source.repo, source.pull_number)
+        context = github_service.fetch_pull_request_context(source.owner, source.repo, source.pull_number)
     except GitHubAPIError as exc:
         if exc.status_code == 404:
             raise HTTPException(status_code=404, detail="GitHub PR not found. Please verify the PR URL.") from exc
@@ -47,18 +50,65 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         raise HTTPException(status_code=500, detail="Internal server error.") from exc
 
     parsed_diffs = DiffParser.parse_files(context["files"])
-    risk_result = RiskAnalyzer().analyze_files(context["files"], parsed_diffs)
-    risk_summary = risk_result["risk_summary"]
+    rule_result = RiskAnalyzer().analyze_files(context["files"], parsed_diffs)
+    risk_summary = rule_result["risk_summary"]
 
-    message = "Fetched PR metadata and changed files successfully. Rule-based risk analysis completed."
-    if payload.use_ai:
-        message = (
-            f"{message} AI review is not implemented in this stage, using rule-based analysis only."
-        )
-
-    summary = (
+    rule_summary = (
         "Rule-based risk analysis found "
         f"{risk_summary['total']} risks, including {risk_summary['high']} high risk items."
+    )
+    message = "Fetched PR metadata and changed files successfully. Rule-based risk analysis completed."
+    review_mode = "rule_based"
+    ai_review = None
+
+    if payload.use_ai:
+        settings = get_settings()
+        llm_reviewer = LLMReviewer(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+            model=settings.openai_model,
+            temperature=settings.llm_temperature,
+            timeout=settings.llm_timeout,
+            max_input_chars=settings.llm_max_input_chars,
+        )
+        ai_configured = llm_reviewer.is_configured()
+        ai_review = llm_reviewer.generate_review(
+            pr=context["pr"],
+            files=context["files"],
+            risks=rule_result["risks"],
+            risk_summary=rule_result["risk_summary"],
+            stats=context["stats"],
+        )
+
+        if ai_configured and ai_review.get("enabled"):
+            review_mode = "ai_assisted"
+            message = "Fetched PR metadata and changed files successfully. AI-assisted review completed."
+        elif not ai_configured:
+            review_mode = "ai_fallback"
+            message = (
+                "Fetched PR metadata and changed files successfully. "
+                "AI config is missing, fallback to rule-based review."
+            )
+        else:
+            review_mode = "ai_fallback"
+            message = (
+                "Fetched PR metadata and changed files successfully. "
+                "AI review failed, fallback to rule-based review."
+            )
+
+    summary = rule_summary
+    if ai_review and ai_review.get("enabled") and ai_review.get("pr_summary"):
+        summary = ai_review.get("pr_summary", rule_summary)
+
+    markdown_report = ReportService().build_markdown_report(
+        pr=context["pr"],
+        stats=context["stats"],
+        files=context["files"],
+        summary=summary,
+        risks=rule_result["risks"],
+        suggestions=rule_result["suggestions"],
+        risk_summary=rule_result["risk_summary"],
+        ai_review=ai_review,
     )
 
     return ReviewResponse(
@@ -68,8 +118,11 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         files=context["files"],
         stats=context["stats"],
         summary=summary,
-        risks=risk_result["risks"],
-        suggestions=risk_result["suggestions"],
-        risk_summary=risk_summary,
+        risks=rule_result["risks"],
+        suggestions=rule_result["suggestions"],
+        risk_summary=rule_result["risk_summary"],
+        ai_review=ai_review,
+        markdown_report=markdown_report,
+        review_mode=review_mode,
         use_ai=payload.use_ai,
     )
