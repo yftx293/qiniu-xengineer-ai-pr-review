@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 from typing import Any
@@ -77,18 +77,18 @@ class RiskAnalyzer:
         types = {risk["type"] for risk in risks}
 
         if "High" in severities:
-            suggestions.append("建议优先检查 High 风险项，确认是否存在安全或稳定性问题。")
+            suggestions.append("建议优先处理 High 风险项，确认是否存在安全或稳定性问题。")
         if "Dangerous Function Usage" in types:
-            suggestions.append("建议移除或严格隔离危险执行函数，避免引入远程代码执行风险。")
+            suggestions.append("建议移除或严格隔离危险执行函数，避免引入命令执行风险。")
         if "Potential SQL Injection" in types:
-            suggestions.append("建议使用参数化查询或 ORM 参数绑定，避免字符串拼接 SQL。")
+            suggestions.append("建议使用参数化查询，避免字符串拼接 SQL。")
         if "Missing Tests" in types or "Large Change Set" in types:
             suggestions.append("建议为本次较大变更补充测试用例，并覆盖关键路径。")
         if "Hardcoded Secret" in types:
-            suggestions.append("建议将密钥和凭据迁移到环境变量或安全配置中心。")
+            suggestions.append("建议将密钥和凭据改为从环境变量或安全配置中心读取。")
 
         if not suggestions:
-            suggestions.append("建议对中低风险项进行二次人工 Review，并确认变更影响面。")
+            suggestions.append("建议对中低风险项进行二次人工 Review，确认变更影响面。")
         return suggestions
 
     def build_risk_summary(self, risks: list[dict[str, Any]]) -> dict[str, Any]:
@@ -109,6 +109,7 @@ class RiskAnalyzer:
             content = line.get("content", "")
             if not SECRET_PATTERN.search(content):
                 continue
+
             confidence = "High" if self._looks_like_assignment(content) else "Medium"
             risks.append(
                 self._risk_item(
@@ -137,6 +138,7 @@ class RiskAnalyzer:
             )
             if not matched:
                 continue
+
             risks.append(
                 self._risk_item(
                     file=filename,
@@ -153,6 +155,7 @@ class RiskAnalyzer:
 
     def _detect_exception_swallowing(self, filename: str, added_lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
         risks: list[dict[str, Any]] = []
+
         for idx, line in enumerate(added_lines):
             content = line.get("content", "").strip()
             lowered = content.lower()
@@ -166,7 +169,7 @@ class RiskAnalyzer:
                         risk_type="Swallowed Exception",
                         message="异常被直接吞掉，可能掩盖真实错误并增加排障难度。",
                         evidence=line.get("content", ""),
-                        suggestion="建议记录异常日志并给出明确错误处理逻辑，避免仅 pass。",
+                        suggestion="建议记录异常日志并给出明确处理策略，避免仅 pass。",
                         confidence="Medium",
                     )
                 )
@@ -183,17 +186,20 @@ class RiskAnalyzer:
                             risk_type="Swallowed Exception",
                             message="except 代码块仅包含 pass，异常处理不完整。",
                             evidence=f"{line.get('content', '')} ... pass",
-                            suggestion="建议至少记录日志并补充恢复或失败处理策略。",
+                            suggestion="建议至少记录日志并补充恢复或失败处理逻辑。",
                             confidence="Medium",
                         )
                     )
+
         return risks
 
     def _detect_sql_injection(self, filename: str, added_lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
         risks: list[dict[str, Any]] = []
+
         for line in added_lines:
             content = line.get("content", "")
             lowered = content.lower()
+
             if not SQL_PATTERN.search(content):
                 continue
             if not (
@@ -218,12 +224,14 @@ class RiskAnalyzer:
                     confidence="Medium",
                 )
             )
+
         return risks
 
     def _detect_dependency_change(self, filename: str) -> list[dict[str, Any]]:
         lowered = filename.lower()
         if not any(name in lowered for name in DEPENDENCY_FILE_NAMES):
             return []
+
         return [
             self._risk_item(
                 file=filename,
@@ -241,6 +249,7 @@ class RiskAnalyzer:
         lowered = filename.lower()
         if not any(keyword in lowered for keyword in CONFIG_KEYWORDS):
             return []
+
         return [
             self._risk_item(
                 file=filename,
@@ -258,13 +267,14 @@ class RiskAnalyzer:
         lowered = filename.lower()
         if not any(keyword in lowered for keyword in AUTH_KEYWORDS):
             return []
+
         return [
             self._risk_item(
                 file=filename,
                 line=None,
                 severity="Medium",
                 risk_type="Auth/Permission Sensitive Change",
-                message="检测到认证或权限相关模块变更，需重点关注越权和鉴权绕过风险。",
+                message="检测到认证或权限相关模块变更，需重点关注越权或鉴权绕过风险。",
                 evidence=filename,
                 suggestion="建议补充权限边界测试和负向用例，确认访问控制逻辑正确。",
                 confidence="Medium",
@@ -274,13 +284,14 @@ class RiskAnalyzer:
     def _detect_large_change(self, filename: str, changed_lines: int) -> list[dict[str, Any]]:
         if changed_lines < 300:
             return []
+
         return [
             self._risk_item(
                 file=filename,
                 line=None,
                 severity="Medium",
                 risk_type="Large Change Set",
-                message="单文件改动较大，可能增加回归风险和 review 难度。",
+                message="单文件改动较大，可能增加回归风险和 Review 难度。",
                 evidence=f"changed_lines={changed_lines}",
                 suggestion="建议拆分提交或补充更细粒度测试，降低合并风险。",
                 confidence="High",
@@ -293,6 +304,7 @@ class RiskAnalyzer:
             content = line.get("content", "")
             if not TODO_PATTERN.search(content):
                 continue
+
             risks.append(
                 self._risk_item(
                     file=filename,
@@ -305,6 +317,7 @@ class RiskAnalyzer:
                     confidence="High",
                 )
             )
+
         return risks
 
     def _analyze_missing_tests(self, files: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -371,10 +384,12 @@ class RiskAnalyzer:
     def _dedupe_risks(risks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         unique: list[dict[str, Any]] = []
         seen: set[tuple[str | None, str, str | None]] = set()
+
         for risk in risks:
             key = (risk.get("file"), risk.get("type", ""), risk.get("evidence"))
             if key in seen:
                 continue
             seen.add(key)
             unique.append(risk)
+
         return unique
