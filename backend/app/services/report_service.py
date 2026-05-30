@@ -67,7 +67,7 @@ class ReportService:
             for item in risk_analysis:
                 lines.append(f"- {item}")
         else:
-            lines.append("- 当前没有额外的风险研判说明，建议结合风险表继续人工复核。")
+            lines.append("- 当前没有额外的风险研判说明，建议继续结合风险表做人工复核。")
         lines.append("")
 
         lines.append("## 7. Review 建议")
@@ -104,15 +104,21 @@ class ReportService:
             lines.append("- rule_hits_by_type: none")
         lines.append("")
 
-        lines.append("## 9. 分析限制")
+        lines.append("## 9. 审查策略说明")
+        lines.append("- Rule Engine: 负责发现高确定性风险，例如敏感信息、危险执行、SQL 拼接、权限敏感改动和测试缺失。")
+        lines.append("- AI Reviewer: 负责基于关键文件上下文组织 reviewer 风格总结，补充影响面判断和可执行建议。")
+        lines.append("- 当 patch 被截断或 AI 不可用时，本报告会退回到规则主导模式，适合继续做快速人工复核。")
+        lines.append("")
+
+        lines.append("## 10. 分析限制")
         lines.append("- GitHub API 可能受未认证 rate limit 影响。")
         lines.append("- 超长 patch 会被截断，极大 PR 的上下文可能不完整。")
         lines.append("- AI 结论主要用于辅助判断，最终是否合并仍需结合业务背景和人工 Review。")
         lines.append("- 规则命中提供的是高价值线索，不等同于已经确认存在缺陷。")
         lines.append("")
 
-        lines.append("## 10. 说明")
-        lines.append("本报告由规则分析和可选 AI 协同生成：规则负责提供高确定性线索，AI 负责补充上下文理解和评审表达。")
+        lines.append("## 11. 说明")
+        lines.append("本报告由规则分析和可选 AI 协同生成，目标是帮助开发者更快定位风险、组织 Review 结论并形成可复用的 Markdown 输出。")
 
         ai_section = self.format_ai_review(ai_review)
         if ai_section:

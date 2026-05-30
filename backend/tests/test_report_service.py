@@ -84,5 +84,5 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
     assert "Rule summary" in report
     assert "Run dependency audit" in report
     assert "| Medium | High | requirements.txt | Dependency Change |" in report
-    assert "## 9. 分析限制" in report
+    assert "## 10. 分析限制" in report
     assert "patch_truncated_file_count: 1" in report
