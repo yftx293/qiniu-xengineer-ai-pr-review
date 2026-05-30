@@ -25,6 +25,21 @@ function formatReviewMode(reviewMode: string): string {
   }
 }
 
+function getAiStatusLabel(status: string): string {
+  switch (status) {
+    case "completed":
+      return "AI Completed";
+    case "config_missing":
+      return "Fallback: Missing Config";
+    case "fallback_error":
+      return "Fallback: Request Error";
+    case "not_requested":
+      return "AI Disabled";
+    default:
+      return status || "Unknown";
+  }
+}
+
 export default function App() {
   const [prUrl, setPrUrl] = useState("");
   const [githubToken, setGithubToken] = useState("");
@@ -32,6 +47,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ReviewResponse | null>(null);
+  const [resultSequence, setResultSequence] = useState(0);
+  const [isResetting, setIsResetting] = useState(false);
 
   const hasResult = useMemo(() => result !== null, [result]);
   const ruleTypeCount = result ? Object.keys(result.analysis_trace.rule_hits_by_type).length : 0;
@@ -39,7 +56,7 @@ export default function App() {
 
   const handleAnalyze = async () => {
     if (!prUrl.trim()) {
-      setError("请先输入 GitHub PR URL。");
+      setError("Please enter a GitHub PR URL first.");
       return;
     }
 
@@ -53,11 +70,12 @@ export default function App() {
         use_ai: useAi,
       });
       setResult(response);
+      setResultSequence((current) => current + 1);
     } catch (requestError) {
       if (requestError instanceof Error) {
         setError(requestError.message);
       } else {
-        setError("发生未知错误，请稍后重试。");
+        setError("An unexpected error occurred. Please try again.");
       }
       setResult(null);
     } finally {
@@ -66,11 +84,13 @@ export default function App() {
   };
 
   const handleReset = () => {
+    setIsResetting(true);
     setPrUrl("");
     setGithubToken("");
     setUseAi(false);
     setError("");
     setResult(null);
+    window.setTimeout(() => setIsResetting(false), 280);
   };
 
   return (
@@ -83,12 +103,12 @@ export default function App() {
 
       <div className="app-grid">
         <aside className="control-rail">
-          <section className="control-card hero-panel">
+          <section className="control-card hero-panel motion-enter motion-delay-0">
             <div className="eyebrow">AI Code Review Console</div>
             <h1>CodeLens</h1>
             <p className="hero-copy">
-              面向开发者的 PR 审查工作台，把 GitHub Diff、规则检测和 AI Review
-              汇聚到同一块控制面板里。
+              A developer-first PR review console that brings GitHub diff context,
+              rule-based risk detection, and AI review into one live workspace.
             </p>
 
             <div className="hero-metrics">
@@ -105,15 +125,15 @@ export default function App() {
             <div className="feature-list">
               <div className="feature-item">
                 <span className="feature-dot" />
-                自动抓取 PR 元数据与变更摘要
+                Pull PR metadata and change summaries automatically
               </div>
               <div className="feature-item">
                 <span className="feature-dot" />
-                规则识别高确定性风险并标记等级
+                Detect high-confidence risks with explicit severity
               </div>
               <div className="feature-item">
                 <span className="feature-dot" />
-                生成可直接复制的 Markdown Review 报告
+                Export a copy-ready Markdown review report
               </div>
             </div>
           </section>
@@ -123,6 +143,7 @@ export default function App() {
             githubToken={githubToken}
             useAi={useAi}
             loading={loading}
+            isResetting={isResetting}
             onPrUrlChange={setPrUrl}
             onTokenChange={setGithubToken}
             onUseAiChange={setUseAi}
@@ -130,7 +151,7 @@ export default function App() {
             onReset={handleReset}
           />
 
-          <section className="control-card system-card">
+          <section className="control-card system-card motion-enter motion-delay-2">
             <div className="card-caption">System Status</div>
             <div className="status-row">
               <span>Review Engine</span>
@@ -152,7 +173,7 @@ export default function App() {
         </aside>
 
         <main className="workspace">
-          <section className="workspace-header">
+          <section className="workspace-header motion-enter motion-delay-1">
             <div>
               <div className="eyebrow">Review Workspace</div>
               <h2>Pull Request Intelligence Board</h2>
@@ -168,25 +189,25 @@ export default function App() {
           {loading ? <LoadingState /> : null}
 
           {!loading && !hasResult ? (
-            <section className="card empty-hangar">
+            <section className="card empty-hangar motion-enter motion-delay-3">
               <div className="empty-radar" aria-hidden="true">
                 <span />
                 <span />
                 <span />
               </div>
               <div className="empty-copy">
-                <h3>等待接入一个 Pull Request</h3>
+                <h3>Waiting for a Pull Request</h3>
                 <p>
-                  在左侧输入 GitHub PR 链接后，系统会依次完成上下文抓取、Diff 解析、规则审查和
-                  AI Review 生成。
+                  Paste a GitHub PR URL on the left and CodeLens will fetch context,
+                  parse the diff, scan for risks, and prepare an AI-assisted review.
                 </p>
               </div>
             </section>
           ) : null}
 
           {!loading && result ? (
-            <>
-              <section className="card hero-report">
+            <div key={resultSequence} className="result-stack">
+              <section className="card hero-report reveal-panel reveal-delay-0">
                 <div className="hero-report-main">
                   <div className="card-caption">Mission Summary</div>
                   <h3>{result.pr.title}</h3>
@@ -194,27 +215,27 @@ export default function App() {
                 </div>
                 <div className="hero-report-side">
                   <span className="signal-pill">Mode: {formatReviewMode(result.review_mode)}</span>
-                  <span className="signal-pill">AI: {result.analysis_trace.ai_status}</span>
+                  <span className="signal-pill">AI: {getAiStatusLabel(result.analysis_trace.ai_status)}</span>
                   <span className="signal-pill">Rule Types: {ruleTypeCount}</span>
                   <span className="signal-pill">Files: {result.stats.file_count}</span>
                 </div>
               </section>
 
               {truncationCount > 0 ? (
-                <section className="warning-panel">
+                <section className="warning-panel reveal-panel reveal-delay-1">
                   <div className="warning-icon">!</div>
                   <div>
-                    <strong>检测到上下文截断</strong>
+                    <strong>Patch truncation detected</strong>
                     <p>
-                      当前有 {truncationCount} 个文件的 patch 内容被 GitHub 截断，建议结合原始 PR
-                      页面进一步复核。
+                      GitHub truncated patch content for {truncationCount} file(s).
+                      Review the original PR page for a deeper manual check.
                     </p>
                   </div>
                 </section>
               ) : null}
 
-              <section className="card stat-deck">
-                <div className="stat-tile">
+              <section className="card stat-deck reveal-panel reveal-delay-2">
+                <div className="stat-tile stat-tile-highlight">
                   <span className="metric-label">Changed Files</span>
                   <strong>{result.stats.file_count}</strong>
                 </div>
@@ -226,28 +247,42 @@ export default function App() {
                   <span className="metric-label">Deletions</span>
                   <strong>-{result.stats.total_deletions}</strong>
                 </div>
-                <div className="stat-tile">
+                <div
+                  className={
+                    result.risk_summary.high > 0
+                      ? "stat-tile stat-tile-danger"
+                      : "stat-tile"
+                  }
+                >
                   <span className="metric-label">Risk Count</span>
                   <strong>{result.risk_summary.total}</strong>
                 </div>
               </section>
 
               <div className="workspace-grid workspace-grid-top">
-                <PrInfoCard pr={result.pr} />
-                <RiskSummaryCard riskSummary={result.risk_summary} />
+                <PrInfoCard className="reveal-panel reveal-delay-3" pr={result.pr} />
+                <RiskSummaryCard className="reveal-panel reveal-delay-4" riskSummary={result.risk_summary} />
               </div>
 
-              <AnalysisTraceCard analysisTrace={result.analysis_trace} />
-              <RiskTable risks={result.risks} />
+              <AnalysisTraceCard
+                className="reveal-panel reveal-delay-5"
+                analysisTrace={result.analysis_trace}
+              />
+              <RiskTable className="reveal-panel reveal-delay-6" risks={result.risks} />
 
               <div className="workspace-grid workspace-grid-bottom">
-                <AiReviewPanel aiReview={result.ai_review} reviewMode={result.review_mode} />
+                <AiReviewPanel
+                  className="reveal-panel reveal-delay-7"
+                  aiReview={result.ai_review}
+                  reviewMode={result.review_mode}
+                />
                 <MarkdownReport
+                  className="reveal-panel reveal-delay-8"
                   markdown_report={result.markdown_report}
                   markdownReport={result.markdownReport}
                 />
               </div>
-            </>
+            </div>
           ) : null}
         </main>
       </div>

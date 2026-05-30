@@ -2,6 +2,7 @@ import type { AnalysisTrace } from "../types";
 
 interface AnalysisTraceCardProps {
   analysisTrace: AnalysisTrace;
+  className?: string;
 }
 
 function formatContextSource(value: string): string {
@@ -32,15 +33,19 @@ function formatRiskType(riskType: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardProps) {
+export default function AnalysisTraceCard({
+  analysisTrace,
+  className = "",
+}: AnalysisTraceCardProps) {
   const ruleEntries = Object.entries(analysisTrace.rule_hits_by_type);
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
 
   return (
-    <section className="card surface-card">
+    <section className={sectionClassName}>
       <div className="card-topline">
         <div>
           <div className="card-caption">Analysis Trace</div>
-          <h3>分析链路</h3>
+          <h3>Analysis Flow</h3>
         </div>
         <span className="badge badge-outline">{formatAiStatus(analysisTrace.ai_status)}</span>
       </div>
@@ -77,7 +82,7 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
       </div>
 
       <div className="rule-hit-list">
-        <h4>规则命中统计</h4>
+        <h4>Rule Hit Counts</h4>
         {ruleEntries.length ? (
           <ul>
             {ruleEntries.map(([riskType, count]) => (
@@ -88,7 +93,7 @@ export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardPr
             ))}
           </ul>
         ) : (
-          <p className="muted">当前没有命中规则风险项，建议重点结合业务语义和上下文进行人工复查。</p>
+          <p className="muted">No rule hit was detected. Use business context and manual review for the final judgment.</p>
         )}
       </div>
     </section>

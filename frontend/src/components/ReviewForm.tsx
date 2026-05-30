@@ -5,6 +5,7 @@ interface ReviewFormProps {
   githubToken: string;
   useAi: boolean;
   loading: boolean;
+  isResetting: boolean;
   onPrUrlChange: (value: string) => void;
   onTokenChange: (value: string) => void;
   onUseAiChange: (value: boolean) => void;
@@ -18,6 +19,7 @@ export default function ReviewForm(props: ReviewFormProps) {
     githubToken,
     useAi,
     loading,
+    isResetting,
     onPrUrlChange,
     onTokenChange,
     onUseAiChange,
@@ -30,8 +32,12 @@ export default function ReviewForm(props: ReviewFormProps) {
     onSubmit();
   };
 
+  const panelClassName = isResetting
+    ? "control-card review-console motion-enter motion-delay-1 is-resetting"
+    : "control-card review-console motion-enter motion-delay-1";
+
   return (
-    <section className="control-card review-console">
+    <section className={panelClassName}>
       <div className="card-caption">Input Console</div>
       <h2>Launch Review</h2>
 
@@ -62,14 +68,19 @@ export default function ReviewForm(props: ReviewFormProps) {
 
         <div className="helper-panel">
           {githubToken.trim()
-            ? "已开启鉴权请求，能更稳定地读取 GitHub PR 变更。"
-            : "未填写 Token 时只能访问公开仓库，且更容易触发 GitHub API 限流。"}
+            ? "Authenticated requests are enabled for more reliable GitHub PR access."
+            : "Without a token, only public repositories are available and rate limits are easier to hit."}
         </div>
 
         <label className="toggle-row">
           <div>
             <span className="toggle-title">AI Review</span>
-            <p className="toggle-copy">启用后会在规则分析之外生成 PR 总结、风险判断和修改建议。</p>
+            <p className="toggle-copy">
+              Add PR summaries, risk reasoning, and actionable review suggestions on top of rule analysis.
+            </p>
+            <span className={useAi ? "toggle-state is-on" : "toggle-state"}>
+              {useAi ? "AI enhancement enabled" : "Rule-only review mode"}
+            </span>
           </div>
           <input
             type="checkbox"
@@ -90,7 +101,7 @@ export default function ReviewForm(props: ReviewFormProps) {
       </form>
 
       <p className="security-note">
-        Token 仅用于本次请求，不会写入 localStorage、sessionStorage、cookie 或项目文件。
+        Tokens are used only for this request and are never written to local storage, session storage, cookies, or project files.
       </p>
     </section>
   );

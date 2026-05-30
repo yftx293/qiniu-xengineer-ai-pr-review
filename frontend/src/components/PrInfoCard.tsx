@@ -2,6 +2,7 @@ import type { PullRequestInfo } from "../types";
 
 interface PrInfoCardProps {
   pr: PullRequestInfo;
+  className?: string;
 }
 
 function formatDate(value: string): string {
@@ -23,45 +24,47 @@ function formatDate(value: string): string {
   });
 }
 
-export default function PrInfoCard({ pr }: PrInfoCardProps) {
+export default function PrInfoCard({ pr, className = "" }: PrInfoCardProps) {
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
+
   return (
-    <section className="card surface-card">
+    <section className={sectionClassName}>
       <div className="card-topline">
         <div className="card-caption">Pull Request</div>
         <span className={`state-pill state-${pr.state.toLowerCase()}`}>{pr.state}</span>
       </div>
 
-      <h3>PR 基本信息</h3>
+      <h3>PR Overview</h3>
 
       <div className="kv-grid">
         <div>
-          <span className="k">标题</span>
+          <span className="k">Title</span>
           <span className="v">{pr.title}</span>
         </div>
         <div>
-          <span className="k">作者</span>
+          <span className="k">Author</span>
           <span className="v">{pr.author}</span>
         </div>
         <div>
-          <span className="k">分支流向</span>
+          <span className="k">Branch Flow</span>
           <span className="v">
             {pr.head_branch} → {pr.base_branch}
           </span>
         </div>
         <div>
-          <span className="k">变更文件数</span>
+          <span className="k">Changed Files</span>
           <span className="v">{pr.changed_files}</span>
         </div>
         <div>
-          <span className="k">创建时间</span>
+          <span className="k">Created At</span>
           <span className="v">{formatDate(pr.created_at)}</span>
         </div>
         <div>
-          <span className="k">更新时间</span>
+          <span className="k">Updated At</span>
           <span className="v">{formatDate(pr.updated_at)}</span>
         </div>
         <div>
-          <span className="k">代码改动</span>
+          <span className="k">Code Delta</span>
           <span className="v">
             +{pr.additions} / -{pr.deletions}
           </span>

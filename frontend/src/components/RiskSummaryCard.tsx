@@ -2,13 +2,16 @@ import type { RiskSummary } from "../types";
 
 interface RiskSummaryCardProps {
   riskSummary: RiskSummary;
+  className?: string;
 }
 
-export default function RiskSummaryCard({ riskSummary }: RiskSummaryCardProps) {
+export default function RiskSummaryCard({ riskSummary, className = "" }: RiskSummaryCardProps) {
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
+
   return (
-    <section className="card surface-card">
+    <section className={sectionClassName}>
       <div className="card-caption">Risk Matrix</div>
-      <h3>风险概览</h3>
+      <h3>Risk Overview</h3>
 
       <div className="summary-grid">
         <div className="summary-tile summary-high">
@@ -31,8 +34,8 @@ export default function RiskSummaryCard({ riskSummary }: RiskSummaryCardProps) {
 
       <p className={riskSummary.has_blocking_risk ? "blocking blocking-yes" : "blocking"}>
         {riskSummary.has_blocking_risk
-          ? "存在阻断性风险，建议优先复查 High severity 项。"
-          : "当前没有阻断性风险，但仍建议结合业务上下文做人工复核。"}
+          ? "Blocking risk exists. Review High severity findings first."
+          : "No blocking risk was found, but manual review is still recommended."}
       </p>
     </section>
   );

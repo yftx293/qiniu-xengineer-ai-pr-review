@@ -4,14 +4,16 @@ import type { RiskItem } from "../types";
 
 interface RiskTableProps {
   risks: RiskItem[];
+  className?: string;
 }
 
 const filters = ["All", "High", "Medium", "Low"] as const;
 
 type SeverityFilter = (typeof filters)[number];
 
-export default function RiskTable({ risks }: RiskTableProps) {
+export default function RiskTable({ risks, className = "" }: RiskTableProps) {
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("All");
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
 
   const filteredRisks = useMemo(() => {
     if (severityFilter === "All") {
@@ -22,24 +24,24 @@ export default function RiskTable({ risks }: RiskTableProps) {
 
   if (risks.length === 0) {
     return (
-      <section className="card surface-card">
+      <section className={sectionClassName}>
         <div className="card-topline">
           <div>
             <div className="card-caption">Risk Details</div>
-            <h3>风险详情</h3>
+            <h3>Risk Details</h3>
           </div>
         </div>
-        <p className="muted">未识别到明显风险，但仍建议人工 Review 核对业务语义与边界行为。</p>
+        <p className="muted">No obvious risk was detected, but manual review is still recommended for business logic and edge cases.</p>
       </section>
     );
   }
 
   return (
-    <section className="card surface-card">
+    <section className={sectionClassName}>
       <div className="card-topline">
         <div>
           <div className="card-caption">Risk Details</div>
-          <h3>风险详情</h3>
+          <h3>Risk Details</h3>
         </div>
         <div className="filter-pills" role="tablist" aria-label="Risk severity filter">
           {filters.map((filter) => (
@@ -55,9 +57,13 @@ export default function RiskTable({ risks }: RiskTableProps) {
         </div>
       </div>
 
+      <div className="table-summary">
+        Showing {filteredRisks.length} / {risks.length} risk item(s).
+      </div>
+
       {filteredRisks.length === 0 ? (
         <div className="empty-inline">
-          当前筛选条件下没有风险项，你可以切换到其他等级继续查看。
+          No risks match the current filter. Switch to another severity level to continue.
         </div>
       ) : (
         <div className="table-wrap">
@@ -74,7 +80,7 @@ export default function RiskTable({ risks }: RiskTableProps) {
             </thead>
             <tbody>
               {filteredRisks.map((risk, index) => (
-                <tr key={`${risk.file ?? "pr"}-${risk.type}-${index}`}>
+                <tr key={`${severityFilter}-${risk.file ?? "pr"}-${risk.type}-${index}`}>
                   <td>
                     <span className={`severity severity-${risk.severity.toLowerCase()}`}>
                       {risk.severity}
