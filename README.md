@@ -200,6 +200,26 @@ npm run dev
 - 前端：`http://127.0.0.1:5173`
 - 后端：`http://127.0.0.1:8000`
 
+## Windows 一键启动
+
+如果你在 Windows 上本地开发或录制 demo，可以直接使用根目录的 `start-dev.bat` 一键启动前后端。
+
+- 适用环境：Windows + 已安装 Python / Node.js
+- 使用方式：
+  - 直接双击 `start-dev.bat`
+  - 或在 `cmd` 中运行 `start-dev.bat`
+- 首次运行会自动安装依赖，耗时可能更长
+- 脚本会自动：
+  - 检查 `python` / `pip` / `node` / `npm`
+  - 自动复制 `backend/.env.example` 和 `frontend/.env.example`
+  - 安装后端和前端依赖
+  - 启动 FastAPI 后端与 Vite 前端
+  - 自动打开浏览器访问前端页面
+- 默认地址：
+  - 前端：`http://127.0.0.1:5173`
+  - 后端：`http://127.0.0.1:8000`
+- 停止方式：关闭脚本拉起的两个 `cmd` 窗口即可
+
 ## 使用流程
 
 1. 启动前后端服务
