@@ -1,18 +1,19 @@
-﻿import type { AIReviewResult } from "../types";
+import type { AIReviewResult } from "../types";
 
 interface AiReviewPanelProps {
   aiReview: AIReviewResult | null;
   reviewMode: string;
+  className?: string;
 }
 
 function formatReviewMode(reviewMode: string): string {
   switch (reviewMode) {
     case "rule_based":
-      return "规则模式";
+      return "Rule based";
     case "ai_assisted":
-      return "AI 辅助模式";
+      return "AI assisted";
     case "ai_fallback":
-      return "AI 回退模式";
+      return "AI fallback";
     default:
       return reviewMode;
   }
@@ -20,10 +21,11 @@ function formatReviewMode(reviewMode: string): string {
 
 function renderList(items: string[]) {
   if (!items.length) {
-    return <p className="muted">暂无内容</p>;
+    return <p className="muted">No content yet.</p>;
   }
+
   return (
-    <ul>
+    <ul className="insight-list">
       {items.map((item, index) => (
         <li key={`${item}-${index}`}>{item}</li>
       ))}
@@ -31,45 +33,58 @@ function renderList(items: string[]) {
   );
 }
 
-export default function AiReviewPanel({ aiReview, reviewMode }: AiReviewPanelProps) {
+export default function AiReviewPanel({
+  aiReview,
+  reviewMode,
+  className = "",
+}: AiReviewPanelProps) {
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
+
   if (!aiReview) {
     return (
-      <section className="card">
-        <h3>AI Review</h3>
-        <p className="muted">当前为规则模式，未启用 AI Review。</p>
+      <section className={sectionClassName}>
+        <div className="card-caption">AI Review</div>
+        <h3>AI Review Insights</h3>
+        <p className="muted">AI review is disabled. The current result comes from rule analysis only.</p>
       </section>
     );
   }
 
   return (
-    <section className="card">
-      <h3>AI Review</h3>
-      <div className="ai-meta">
-        <span>模式: <strong>{formatReviewMode(reviewMode)}</strong></span>
-        <span>启用状态: <strong>{aiReview.enabled ? "已启用" : "未启用"}</strong></span>
-        <span>整体风险: <strong>{aiReview.overall_risk_level}</strong></span>
-        <span>置信度: <strong>{aiReview.confidence}</strong></span>
+    <section className={sectionClassName}>
+      <div className="card-topline">
+        <div>
+          <div className="card-caption">AI Review</div>
+          <h3>AI Review Insights</h3>
+        </div>
+        <div className="workspace-badges">
+          <span className="badge badge-outline">{formatReviewMode(reviewMode)}</span>
+          <span className="badge badge-outline">Risk: {aiReview.overall_risk_level}</span>
+          <span className="badge badge-outline">Confidence: {aiReview.confidence}</span>
+        </div>
       </div>
 
       {aiReview.error ? <p className="error-inline">{aiReview.error}</p> : null}
 
       <div className="ai-block">
-        <h4>PR 总结</h4>
-        <p>{aiReview.pr_summary || "暂无 AI 总结"}</p>
+        <h4>PR Summary</h4>
+        <p>{aiReview.pr_summary || "No AI summary available."}</p>
+      </div>
+
+      <div className="ai-section-grid">
+        <div className="ai-block">
+          <h4>Main Changes</h4>
+          {renderList(aiReview.main_changes)}
+        </div>
+
+        <div className="ai-block">
+          <h4>Risk Analysis</h4>
+          {renderList(aiReview.risk_analysis)}
+        </div>
       </div>
 
       <div className="ai-block">
-        <h4>主要变更</h4>
-        {renderList(aiReview.main_changes)}
-      </div>
-
-      <div className="ai-block">
-        <h4>风险分析</h4>
-        {renderList(aiReview.risk_analysis)}
-      </div>
-
-      <div className="ai-block">
-        <h4>Review 建议</h4>
+        <h4>Review Suggestions</h4>
         {renderList(aiReview.review_suggestions)}
       </div>
     </section>
