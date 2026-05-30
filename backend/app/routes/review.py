@@ -12,6 +12,29 @@ from app.services.risk_analyzer import RiskAnalyzer
 router = APIRouter(prefix="/api", tags=["review"])
 
 
+def _build_rule_summary(risk_summary: dict[str, int], rule_hits_by_type: dict[str, int]) -> str:
+    total = int(risk_summary.get("total", 0) or 0)
+    high = int(risk_summary.get("high", 0) or 0)
+    medium = int(risk_summary.get("medium", 0) or 0)
+
+    if total == 0:
+        return "规则审查未发现明显高风险信号，但仍建议结合业务上下文确认关键路径、异常处理和回归覆盖是否完整。"
+
+    top_types = sorted(rule_hits_by_type.items(), key=lambda item: (-item[1], item[0]))[:2]
+    top_type_text = "、".join(risk_type for risk_type, _count in top_types)
+
+    if high > 0:
+        return (
+            f"规则审查共识别 {total} 项风险提示，其中 High 风险 {high} 项、Medium 风险 {medium} 项。"
+            f"当前最值得优先复核的方向是：{top_type_text or '高风险代码路径'}。"
+        )
+
+    return (
+        f"规则审查共识别 {total} 项中低风险提示，主要集中在 {top_type_text or '变更影响面'}。"
+        "建议结合具体业务场景确认这些提示是否会在真实运行路径中放大。"
+    )
+
+
 @router.post("/parse-pr-url", response_model=ParsedPRInfo)
 def parse_pr_url(payload: ParsePRUrlRequest) -> ParsedPRInfo:
     try:
@@ -53,14 +76,14 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
     rule_result = RiskAnalyzer().analyze_files(context["files"], parsed_diffs)
     risk_summary = rule_result["risk_summary"]
 
-    rule_summary = (
-        "Rule-based risk analysis found "
-        f"{risk_summary['total']} risks, including {risk_summary['high']} high risk items."
-    )
+    rule_summary = _build_rule_summary(risk_summary, rule_result["rule_hits_by_type"])
     message = "Fetched PR metadata and changed files successfully. Rule-based risk analysis completed."
     review_mode = "rule_based"
     ai_status = "not_requested"
+    fallback_reason = None
     ai_review = None
+    ai_context_file_count = 0
+    top_risk_file_count = len({risk.get("file") for risk in rule_result["risks"] if risk.get("file") and risk.get("severity") in {"High", "Medium"}})
 
     if payload.use_ai:
         settings = get_settings()
@@ -80,6 +103,8 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
             risk_summary=rule_result["risk_summary"],
             stats=context["stats"],
         )
+        ai_context_file_count = int(llm_reviewer.last_prompt_metadata.get("ai_context_file_count", 0) or 0)
+        top_risk_file_count = int(llm_reviewer.last_prompt_metadata.get("top_risk_file_count", top_risk_file_count) or 0)
 
         if ai_configured and ai_review.get("enabled"):
             review_mode = "ai_assisted"
@@ -88,6 +113,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         elif not ai_configured:
             review_mode = "ai_fallback"
             ai_status = "config_missing"
+            fallback_reason = "ai_config_missing"
             message = (
                 "Fetched PR metadata and changed files successfully. "
                 "AI config is missing, fallback to rule-based review."
@@ -95,6 +121,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         else:
             review_mode = "ai_fallback"
             ai_status = "fallback_error"
+            fallback_reason = "ai_generation_failed"
             message = (
                 "Fetched PR metadata and changed files successfully. "
                 "AI review failed, fallback to rule-based review."
@@ -105,6 +132,9 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         "patch_truncated_file_count": sum(1 for file_item in context["files"] if file_item.get("patch_truncated")),
         "context_source": "github_api_pr_and_files",
         "ai_status": ai_status,
+        "fallback_reason": fallback_reason,
+        "top_risk_file_count": top_risk_file_count,
+        "ai_context_file_count": ai_context_file_count,
     }
 
     summary = rule_summary

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -21,6 +21,7 @@ class ReportService:
             final_summary = ai_review.get("pr_summary", summary)
 
         main_changes = self._pick_main_changes(ai_review, files)
+        risk_analysis = self._pick_risk_analysis(ai_review, risks)
         review_suggestions = self._pick_suggestions(ai_review, suggestions)
 
         lines: list[str] = []
@@ -61,7 +62,15 @@ class ReportService:
         lines.append(self.format_risk_table(risks))
         lines.append("")
 
-        lines.append("## 6. Review 建议")
+        lines.append("## 6. 风险研判")
+        if risk_analysis:
+            for item in risk_analysis:
+                lines.append(f"- {item}")
+        else:
+            lines.append("- 当前没有额外的风险研判说明，建议结合风险表继续人工复核。")
+        lines.append("")
+
+        lines.append("## 7. Review 建议")
         if review_suggestions:
             for item in review_suggestions:
                 lines.append(f"- {item}")
@@ -69,10 +78,22 @@ class ReportService:
             lines.append("- 暂无建议。")
         lines.append("")
 
-        lines.append("## 7. 分析链路")
+        lines.append("## 8. 分析链路")
         lines.append(f"- context_source: {analysis_trace.get('context_source', 'unknown')}")
         lines.append(f"- ai_status: {analysis_trace.get('ai_status', 'unknown')}")
-        lines.append(f"- patch 截断文件数: {analysis_trace.get('patch_truncated_file_count', 0)}")
+        lines.append(f"- patch_truncated_file_count: {analysis_trace.get('patch_truncated_file_count', 0)}")
+
+        fallback_reason = analysis_trace.get("fallback_reason")
+        if fallback_reason:
+            lines.append(f"- fallback_reason: {fallback_reason}")
+
+        top_risk_file_count = analysis_trace.get("top_risk_file_count")
+        if top_risk_file_count is not None:
+            lines.append(f"- top_risk_file_count: {top_risk_file_count}")
+
+        ai_context_file_count = analysis_trace.get("ai_context_file_count")
+        if ai_context_file_count is not None:
+            lines.append(f"- ai_context_file_count: {ai_context_file_count}")
 
         rule_hits = analysis_trace.get("rule_hits_by_type", {}) or {}
         if rule_hits:
@@ -83,16 +104,15 @@ class ReportService:
             lines.append("- rule_hits_by_type: none")
         lines.append("")
 
-        lines.append("## 8. 分析限制")
+        lines.append("## 9. 分析限制")
         lines.append("- GitHub API 可能受未认证 rate limit 影响。")
         lines.append("- 超长 patch 会被截断，极大 PR 的上下文可能不完整。")
-        lines.append("- AI 结果仅作辅助参考，最终仍需人工确认。")
+        lines.append("- AI 结论主要用于辅助判断，最终是否合并仍需结合业务背景和人工 Review。")
+        lines.append("- 规则命中提供的是高价值线索，不等同于已经确认存在缺陷。")
         lines.append("")
 
-        lines.append("## 9. 说明")
-        lines.append(
-            "本报告由规则分析和可选 AI 生成，仅作为辅助 Review 参考，最终仍需人工确认后再做合并决策。"
-        )
+        lines.append("## 10. 说明")
+        lines.append("本报告由规则分析和可选 AI 协同生成：规则负责提供高确定性线索，AI 负责补充上下文理解和评审表达。")
 
         ai_section = self.format_ai_review(ai_review)
         if ai_section:
@@ -160,6 +180,21 @@ class ReportService:
             deletions = int(file_item.get("deletions", 0) or 0)
             result.append(f"{filename} ({status}, +{additions}/-{deletions})")
         return result
+
+    def _pick_risk_analysis(self, ai_review: dict[str, Any] | None, risks: list[dict[str, Any]]) -> list[str]:
+        if ai_review and ai_review.get("enabled") and ai_review.get("risk_analysis"):
+            return [str(item) for item in ai_review.get("risk_analysis", []) if str(item).strip()]
+
+        if not risks:
+            return ["规则分析未发现明显高风险信号，但仍建议复核边界条件、异常路径和发布影响。"]
+
+        insights: list[str] = []
+        for risk in risks[:5]:
+            risk_type = risk.get("type", "Unknown Risk")
+            risk_file = risk.get("file") or "PR-level"
+            message = risk.get("message", "")
+            insights.append(f"{risk_file}: {risk_type}。{message}")
+        return insights
 
     def _pick_suggestions(self, ai_review: dict[str, Any] | None, rule_suggestions: list[str]) -> list[str]:
         if ai_review and ai_review.get("enabled") and ai_review.get("review_suggestions"):

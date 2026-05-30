@@ -105,6 +105,9 @@ class AnalysisTrace(BaseModel):
     patch_truncated_file_count: int
     context_source: str
     ai_status: str
+    fallback_reason: str | None = None
+    top_risk_file_count: int | None = None
+    ai_context_file_count: int | None = None
 
 
 class ReviewResponse(BaseModel):
