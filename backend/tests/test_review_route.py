@@ -68,6 +68,9 @@ def test_review_route_returns_rule_based_response(monkeypatch) -> None:
     assert payload["analysis_trace"]["context_source"] == "github_api_pr_and_files"
     assert payload["analysis_trace"]["ai_status"] == "not_requested"
     assert payload["analysis_trace"]["patch_truncated_file_count"] == 0
+    assert payload["analysis_trace"]["fallback_reason"] is None
+    assert payload["analysis_trace"]["top_risk_file_count"] >= 1
+    assert payload["analysis_trace"]["ai_context_file_count"] == 0
     assert payload["markdown_report"]
 
 
@@ -116,6 +119,8 @@ def test_review_route_falls_back_when_ai_config_is_missing(monkeypatch) -> None:
     assert payload["review_mode"] == "ai_fallback"
     assert payload["ai_review"]["enabled"] is False
     assert payload["analysis_trace"]["ai_status"] == "config_missing"
+    assert payload["analysis_trace"]["fallback_reason"] == "ai_config_missing"
+    assert "规则审查" in payload["summary"]
 
 
 def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
@@ -162,3 +167,50 @@ def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
     assert payload["review_mode"] == "ai_assisted"
     assert payload["summary"] == "AI summary for review route"
     assert payload["analysis_trace"]["ai_status"] == "completed"
+    assert payload["analysis_trace"]["fallback_reason"] is None
+
+
+def test_review_route_marks_ai_fallback_when_generation_fails(monkeypatch) -> None:
+    def fake_fetch(self, owner: str, repo: str, pull_number: int) -> dict[str, object]:
+        return _sample_context()
+
+    monkeypatch.setattr(review_route.GitHubService, "fetch_pull_request_context", fake_fetch)
+    monkeypatch.setattr(review_route.LLMReviewer, "is_configured", lambda self: True)
+    monkeypatch.setattr(
+        review_route.LLMReviewer,
+        "generate_review",
+        lambda self, pr, files, risks, risk_summary, stats: {
+            "enabled": False,
+            "error": "AI review failed, fallback to rule-based review.",
+            "pr_summary": "规则审查已完成。",
+            "main_changes": [],
+            "risk_analysis": [],
+            "review_suggestions": [],
+            "overall_risk_level": "High",
+            "confidence": "Low",
+        },
+    )
+    monkeypatch.setattr(
+        review_route,
+        "get_settings",
+        lambda: Settings(
+            openai_api_key="key",
+            openai_base_url="https://api.openai.com/v1",
+            openai_model="gpt-4.1-mini",
+            llm_temperature=0.2,
+            llm_timeout=30,
+            llm_max_input_chars=20000,
+        ),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/review",
+        json={"pr_url": "https://github.com/openai/openai-python/pull/12", "github_token": "", "use_ai": True},
+    )
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["review_mode"] == "ai_fallback"
+    assert payload["analysis_trace"]["ai_status"] == "fallback_error"
+    assert payload["analysis_trace"]["fallback_reason"] == "ai_generation_failed"

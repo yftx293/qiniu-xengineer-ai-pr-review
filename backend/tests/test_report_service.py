@@ -21,12 +21,16 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
             "patch_truncated_file_count": 0,
             "context_source": "github_api_pr_and_files",
             "ai_status": "completed",
+            "fallback_reason": None,
+            "top_risk_file_count": 0,
+            "ai_context_file_count": 1,
         },
         ai_review={
             "enabled": True,
             "error": None,
             "pr_summary": "AI summary",
             "main_changes": ["auth.py (+10/-2)"],
+            "risk_analysis": ["登录链路被调整，建议重点确认 token 校验和失败路径。"],
             "review_suggestions": ["Verify auth edge cases"],
             "overall_risk_level": "Low",
             "confidence": "High",
@@ -35,8 +39,8 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
 
     assert "AI summary" in report
     assert "Verify auth edge cases" in report
-    assert "未识别到风险项" in report
-    assert "## 7. 分析链路" in report
+    assert "登录链路被调整" in report
+    assert "## 8. 分析链路" in report
     assert "github_api_pr_and_files" in report
 
 
@@ -58,6 +62,7 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
                 "confidence": "High",
                 "file": "requirements.txt",
                 "type": "Dependency Change",
+                "message": "依赖文件发生变更。",
                 "evidence": "requirements.txt",
                 "suggestion": "Run dependency audit",
             }
@@ -69,6 +74,9 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
             "patch_truncated_file_count": 1,
             "context_source": "github_api_pr_and_files",
             "ai_status": "not_requested",
+            "fallback_reason": None,
+            "top_risk_file_count": 1,
+            "ai_context_file_count": 0,
         },
         ai_review=None,
     )
@@ -76,5 +84,5 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
     assert "Rule summary" in report
     assert "Run dependency audit" in report
     assert "| Medium | High | requirements.txt | Dependency Change |" in report
-    assert "## 8. 分析限制" in report
-    assert "patch 截断文件数: 1" in report
+    assert "## 9. 分析限制" in report
+    assert "patch_truncated_file_count: 1" in report
