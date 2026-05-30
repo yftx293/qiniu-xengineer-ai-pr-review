@@ -8,22 +8,41 @@ interface RiskTableProps {
 
 type SeverityFilter = "All" | "High" | "Medium" | "Low";
 
+const severityRank: Record<string, number> = {
+  High: 0,
+  Medium: 1,
+  Low: 2,
+};
+
 export default function RiskTable({ risks }: RiskTableProps) {
   const [filter, setFilter] = useState<SeverityFilter>("All");
 
+  const sortedRisks = useMemo(
+    () =>
+      [...risks].sort((left, right) => {
+        const severityDiff =
+          (severityRank[left.severity] ?? 99) - (severityRank[right.severity] ?? 99);
+        if (severityDiff !== 0) {
+          return severityDiff;
+        }
+        return (left.line ?? 0) - (right.line ?? 0);
+      }),
+    [risks],
+  );
+
   const filteredRisks = useMemo(() => {
     if (filter === "All") {
-      return risks;
+      return sortedRisks;
     }
 
-    return risks.filter((risk) => risk.severity === filter);
-  }, [filter, risks]);
+    return sortedRisks.filter((risk) => risk.severity === filter);
+  }, [filter, sortedRisks]);
 
   if (risks.length === 0) {
     return (
       <section className="card">
         <h3>风险详情</h3>
-        <p>未识别到明显风险，但仍建议人工 Review。</p>
+        <p>当前未识别到明显风险，但仍建议人工复核关键业务路径和异常处理。</p>
       </section>
     );
   }
@@ -32,8 +51,9 @@ export default function RiskTable({ risks }: RiskTableProps) {
     <section className="card">
       <div className="card-head-row">
         <div>
-          <h3>风险详情</h3>
-          <p className="muted">支持按风险等级聚焦查看，方便演示时快速定位高优先级问题。</p>
+          <p className="eyebrow">Risk Focus</p>
+          <h3>聚焦最值得优先复核的问题</h3>
+          <p className="muted">默认按 High 到 Low 排序，支持快速聚焦高优先级风险项。</p>
         </div>
         <div className="filter-chips" role="tablist" aria-label="Risk severity filter">
           {(["All", "High", "Medium", "Low"] as SeverityFilter[]).map((severity) => (
