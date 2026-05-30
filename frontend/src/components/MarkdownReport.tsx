@@ -3,14 +3,20 @@
 interface MarkdownReportProps {
   markdown_report?: string;
   markdownReport?: string;
+  className?: string;
 }
 
-export default function MarkdownReport({ markdown_report, markdownReport }: MarkdownReportProps) {
+export default function MarkdownReport({
+  markdown_report,
+  markdownReport,
+  className = "",
+}: MarkdownReportProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
 
   const markdown = (markdown_report ?? markdownReport ?? "").trim();
+  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
 
   const setCopiedState = () => {
     setCopied(true);
@@ -76,7 +82,7 @@ export default function MarkdownReport({ markdown_report, markdownReport }: Mark
   };
 
   return (
-    <section className="card">
+    <section className={sectionClassName}>
       <div className="card-head-row">
         <h3>Markdown 报告</h3>
         <div className="card-actions">
