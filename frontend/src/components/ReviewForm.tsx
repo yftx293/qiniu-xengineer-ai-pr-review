@@ -1,10 +1,11 @@
-﻿import { FormEvent } from "react";
+import { FormEvent } from "react";
 
 interface ReviewFormProps {
   prUrl: string;
   githubToken: string;
   useAi: boolean;
   loading: boolean;
+  isResetting: boolean;
   onPrUrlChange: (value: string) => void;
   onTokenChange: (value: string) => void;
   onUseAiChange: (value: boolean) => void;
@@ -18,6 +19,7 @@ export default function ReviewForm(props: ReviewFormProps) {
     githubToken,
     useAi,
     loading,
+    isResetting,
     onPrUrlChange,
     onTokenChange,
     onUseAiChange,
@@ -30,9 +32,15 @@ export default function ReviewForm(props: ReviewFormProps) {
     onSubmit();
   };
 
+  const panelClassName = isResetting
+    ? "control-card review-console motion-enter motion-delay-1 is-resetting"
+    : "control-card review-console motion-enter motion-delay-1";
+
   return (
-    <section className="card">
-      <h2>Review 输入</h2>
+    <section className={panelClassName}>
+      <div className="card-caption">Input Console</div>
+      <h2>Launch Review</h2>
+
       <form className="review-form" onSubmit={handleSubmit}>
         <label>
           GitHub PR URL <span className="required">*</span>
@@ -47,42 +55,53 @@ export default function ReviewForm(props: ReviewFormProps) {
         </label>
 
         <label>
-          GitHub Token（推荐填写，用于避免 GitHub API 限流）
+          GitHub Token
           <input
             type="password"
             value={githubToken}
             onChange={(event) => onTokenChange(event.target.value)}
-            placeholder="ghp_... 或 github_pat_...，仅本次请求使用"
+            placeholder="ghp_... or github_pat_..."
             autoComplete="off"
             disabled={loading}
           />
         </label>
-        {!githubToken.trim() ? (
-          <p className="token-hint">未填写 Token 时只能访问公开仓库，且可能触发 GitHub API rate limit。</p>
-        ) : null}
 
-        <label className="checkbox-row">
+        <div className="helper-panel">
+          {githubToken.trim()
+            ? "Authenticated requests are enabled for more reliable GitHub PR access."
+            : "Without a token, only public repositories are available and rate limits are easier to hit."}
+        </div>
+
+        <label className="toggle-row">
+          <div>
+            <span className="toggle-title">AI Review</span>
+            <p className="toggle-copy">
+              Add PR summaries, risk reasoning, and actionable review suggestions on top of rule analysis.
+            </p>
+            <span className={useAi ? "toggle-state is-on" : "toggle-state"}>
+              {useAi ? "AI enhancement enabled" : "Rule-only review mode"}
+            </span>
+          </div>
           <input
             type="checkbox"
             checked={useAi}
             onChange={(event) => onUseAiChange(event.target.checked)}
             disabled={loading}
           />
-          启用 AI Review
         </label>
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "分析中..." : "开始分析"}
+            {loading ? "Review Running..." : "Start Analysis"}
           </button>
-          <button type="button" className="btn" onClick={onReset} disabled={loading}>
-            清空
+          <button type="button" className="btn btn-ghost" onClick={onReset} disabled={loading}>
+            Reset Console
           </button>
         </div>
       </form>
 
       <p className="security-note">
-        Token 仅用于本次请求，不会保存到浏览器存储，也不会写入项目文件。
+        Tokens are used only for this request and are never written to local storage, session storage, cookies, or project files.
       </p>
     </section>
   );
