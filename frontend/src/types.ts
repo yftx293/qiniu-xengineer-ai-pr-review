@@ -81,6 +81,9 @@ export interface AnalysisTrace {
   patch_truncated_file_count: number;
   context_source: string;
   ai_status: string;
+  fallback_reason?: string | null;
+  top_risk_file_count?: number | null;
+  ai_context_file_count?: number | null;
 }
 
 export interface ReviewResponse {

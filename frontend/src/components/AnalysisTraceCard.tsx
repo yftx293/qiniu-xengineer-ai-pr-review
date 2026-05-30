@@ -2,7 +2,6 @@ import type { AnalysisTrace } from "../types";
 
 interface AnalysisTraceCardProps {
   analysisTrace: AnalysisTrace;
-  className?: string;
 }
 
 function formatContextSource(value: string): string {
@@ -17,9 +16,9 @@ function formatAiStatus(value: string): string {
     case "completed":
       return "AI review completed";
     case "config_missing":
-      return "AI config missing, fallback enabled";
+      return "AI config missing, fallback to rules";
     case "fallback_error":
-      return "AI request failed, using rule fallback";
+      return "AI failed, fallback to rules";
     case "not_requested":
       return "AI not requested";
     default:
@@ -27,38 +26,38 @@ function formatAiStatus(value: string): string {
   }
 }
 
-function formatRiskType(riskType: string): string {
-  return riskType
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+function formatFallbackReason(value: string | null | undefined): string {
+  switch (value) {
+    case "ai_config_missing":
+      return "AI config missing";
+    case "ai_generation_failed":
+      return "AI generation failed";
+    default:
+      return value || "None";
+  }
 }
 
-export default function AnalysisTraceCard({
-  analysisTrace,
-  className = "",
-}: AnalysisTraceCardProps) {
+export default function AnalysisTraceCard({ analysisTrace }: AnalysisTraceCardProps) {
   const ruleEntries = Object.entries(analysisTrace.rule_hits_by_type);
-  const sectionClassName = className ? `card surface-card ${className}` : "card surface-card";
 
   return (
-    <section className={sectionClassName}>
-      <div className="card-topline">
+    <section className="card">
+      <div className="card-head-row">
         <div>
-          <div className="card-caption">Analysis Trace</div>
-          <h3>Analysis Flow</h3>
+          <p className="eyebrow">Explainability</p>
+          <h3>Analysis flow and context coverage</h3>
         </div>
-        <span className="badge badge-outline">{formatAiStatus(analysisTrace.ai_status)}</span>
       </div>
 
       <div className="flow-row">
-        <span className="flow-step">GitHub Context</span>
-        <span className="flow-arrow">→</span>
+        <span className="flow-step">GitHub Fetch</span>
+        <span className="flow-arrow">{">"}</span>
         <span className="flow-step">Diff Parse</span>
-        <span className="flow-arrow">→</span>
+        <span className="flow-arrow">{">"}</span>
         <span className="flow-step">Rule Scan</span>
-        <span className="flow-arrow">→</span>
-        <span className="flow-step">AI Review</span>
-        <span className="flow-arrow">→</span>
+        <span className="flow-arrow">{">"}</span>
+        <span className="flow-step">AI Summary</span>
+        <span className="flow-arrow">{">"}</span>
         <span className="flow-step">Markdown Report</span>
       </div>
 
@@ -79,7 +78,28 @@ export default function AnalysisTraceCard({
           <span className="k">Rule Types Hit</span>
           <span className="v">{ruleEntries.length}</span>
         </div>
+        <div>
+          <span className="k">AI Context Files</span>
+          <span className="v">{analysisTrace.ai_context_file_count ?? 0}</span>
+        </div>
+        <div>
+          <span className="k">Top Risk Files</span>
+          <span className="v">{analysisTrace.top_risk_file_count ?? 0}</span>
+        </div>
       </div>
+
+      <div className="explainability-callout">
+        <strong>Why this review:</strong>{" "}
+        {analysisTrace.ai_status === "completed"
+          ? `AI 基于 ${analysisTrace.ai_context_file_count ?? 0} 个关键文件和规则命中结果生成总结。`
+          : "当前结果由规则引擎主导生成，可用于快速定位高确定性风险。"}
+      </div>
+
+      {analysisTrace.fallback_reason ? (
+        <p className="muted">
+          Fallback reason: <strong>{formatFallbackReason(analysisTrace.fallback_reason)}</strong>
+        </p>
+      ) : null}
 
       <div className="rule-hit-list">
         <h4>Rule Hit Counts</h4>
@@ -87,13 +107,13 @@ export default function AnalysisTraceCard({
           <ul>
             {ruleEntries.map(([riskType, count]) => (
               <li key={riskType}>
-                <span>{formatRiskType(riskType)}</span>
+                <span>{riskType}</span>
                 <strong>{count}</strong>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted">No rule hit was detected. Use business context and manual review for the final judgment.</p>
+          <p className="muted">No rule hits in this result. Manual review and AI summary carry more weight here.</p>
         )}
       </div>
     </section>
