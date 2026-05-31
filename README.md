@@ -1,14 +1,14 @@
 # CodeLens AI PR Review Assistant
 
-CodeLens 是一个面向开发者的 AI Pull Request 代码评审助手，面向七牛云 × XEngineer 暑期实训营题目三“AI PR Review 助手”设计。用户输入 GitHub Pull Request 链接后，系统会自动抓取 PR 元数据、变更文件和 patch 内容，结合规则引擎与 AI 模型输出结构化 Review 结论，并生成可复制的 Markdown 报告。
+CodeLens 是一个面向开发者的 AI Pull Request 代码评审助手，面向七牛云 × XEngineer 暑期实训营题目三“AI PR Review 助手”设计。用户输入 GitHub PR 链接后，系统会自动抓取 PR 元数据、变更文件和 patch 内容，结合规则引擎与 AI Reviewer 生成结构化代码审查结果，并输出可复制的 Markdown Review 报告。
 
 仓库地址：<https://github.com/yftx293/qiniu-xengineer-ai-pr-review>
 
 ## 项目亮点
 
-- 不是简单的大模型问答，而是完整的 PR Review 工作流：PR 链接解析、GitHub 数据获取、Diff 解析、规则识别、AI 总结、Markdown 报告输出。
-- 采用“规则分析 + AI 生成”的混合策略：规则负责识别高确定性风险，AI 负责总结上下文和组织自然语言建议。
-- 输出结果可直接服务真实开发场景，支持复制为 Markdown Review 报告，便于贴回 GitHub PR 评论区或团队协作文档。
+- 不是简单的大模型问答，而是完整的 `PR URL -> GitHub 数据获取 -> Diff 解析 -> 风险识别 -> AI 总结 -> Markdown 报告` 流程。
+- 采用 `Rule Engine + AI Reviewer` 双引擎协同方案：规则负责识别高确定性风险，AI 负责总结影响面和生成 reviewer 风格建议。
+- 输出结果可直接服务真实开发流程，支持复制 Markdown 报告用于 GitHub PR 评论区、团队内部复盘或演示展示。
 
 ## 对应赛题要求
 
@@ -22,39 +22,63 @@ CodeLens 是一个面向开发者的 AI Pull Request 代码评审助手，面向
 - 说明误报与漏报控制
 - 说明未来扩展方向
 
-## 核心功能
+## 核心能力
 
 ### 1. GitHub PR 数据获取
 
-- 解析 `https://github.com/{owner}/{repo}/pull/{number}` 格式的 PR 链接
-- 获取 PR 标题、作者、分支、状态、变更文件数、增删行数
+- 解析 `https://github.com/{owner}/{repo}/pull/{number}` 格式 PR 链接
+- 获取 PR 标题、作者、状态、分支、变更文件数、增删行数
 - 获取 changed files、patch、raw/blob 地址
-- 支持用户传入 GitHub Token，缓解 GitHub API rate limit
+- 支持传入 GitHub Token，缓解 GitHub API rate limit
 
 ### 2. Diff 解析与规则风险识别
 
 - 解析 patch hunk、added lines、deleted lines
-- 识别硬编码密钥、危险函数、异常吞掉、潜在 SQL 注入、依赖变更、配置变更、权限敏感改动、缺失测试等风险
+- 识别硬编码密钥、危险函数、异常吞掉、SQL 拼接、敏感日志输出、依赖变更、配置变更、权限敏感改动、CI/Deploy 敏感变更、测试缺失等风险
 - 输出风险等级 `severity` 与置信度 `confidence`
 
-### 3. AI Review 生成
+### 3. AI Reviewer
 
 - 在 `use_ai=true` 时调用 OpenAI-compatible Chat Completions API
-- 生成 PR 总结、主要变更、风险分析和 Review 建议
-- AI 配置缺失或调用失败时自动 fallback 到规则模式
+- 优先基于高风险文件、认证/配置/依赖敏感文件和关键 patch 做上下文总结
+- 生成 PR 总结、主要变更、风险分析和 reviewer 风格建议
+- AI 配置缺失或调用失败时自动 fallback 到规则分析模式
 
-### 4. 前端 Review 工作台
+### 4. Review 工作台
 
 - 输入 GitHub PR URL
 - 可选输入 GitHub Token
 - 可选启用 AI Review
-- 展示 PR 基本信息、变更统计、风险概览、风险详情、AI Review、Markdown 报告
+- 展示 PR 基本信息、风险概览、分析链路、风险详情、AI Review、Markdown 报告
+
+## 创新点如何落地
+
+### 1. 不是聊天回答，而是结构化审查流程
+
+CodeLens 不是“把 diff 扔给大模型然后问一句怎么看”，而是将 PR 数据获取、Diff 解析、规则识别、AI 归纳和报告输出串成一个完整产品闭环。
+
+### 2. 不是单一模型判断，而是规则与模型协作
+
+- Rule Engine：负责高确定性风险识别，例如敏感信息、危险执行、权限敏感改动、测试缺失
+- AI Reviewer：负责基于关键上下文组织 reviewer 风格总结，补充影响面分析和可执行建议
+
+这种设计可以同时降低误报和漏报，也更容易让评委看见“产品方法论”。
+
+### 3. 不是停留在页面展示，而是可落地 Markdown 输出
+
+最终结果会生成一份结构化 Markdown Review 报告，适合复制到 GitHub PR 评论区或用于团队内部复盘，体现真实开发场景价值。
+
+## 示例审查场景
+
+- 安全风险型 PR：识别硬编码密钥、危险执行、敏感日志输出、SQL 拼接
+- 权限敏感型 PR：识别 auth / permission / middleware 相关改动，提示重点做越权与失败路径测试
+- 大改动缺少测试型 PR：识别高改动但无测试更新的情况，提示回归风险
 
 ## 系统架构
 
 ```mermaid
 flowchart LR
-    A[用户输入 GitHub PR URL] --> B[React Review 工作台]
+    A[用户输入 GitHub PR URL] --> B[React Review Workspace]
     B --> C[FastAPI Review API]
     C --> D[PR URL Parser]
     C --> E[GitHub Service]
@@ -91,36 +115,17 @@ flowchart LR
 - GitHub REST API
 - OpenAI-compatible LLM API
 
-## 目录结构
-
-```text
-qiniu-xengineer-ai-pr-review/
-├─ README.md
-├─ docs/
-│  ├─ design.md
-│  └─ pr-plan.md
-├─ backend/
-│  ├─ README.md
-│  ├─ requirements.txt
-│  └─ app/
-├─ frontend/
-│  ├─ README.md
-│  ├─ package.json
-│  └─ src/
-└─ screenshots/
-```
-
 ## 模型选择说明
 
 当前项目采用 OpenAI-compatible Chat Completions API，原因如下：
 
 - 接口通用，便于适配不同模型服务商
 - 适合在短周期比赛中快速完成联调
-- 能够结合规则结果和 patch 上下文输出结构化中文 Review
+- 能够结合规则结果与关键 patch 上下文输出结构化中文 Review
 
 当前实现对模型能力的要求主要包括：
 
-- 读取 PR 元数据与 patch 摘要
+- 读取 PR 元数据与关键 patch 摘要
 - 理解规则分析结果
 - 输出固定 JSON 结构的总结与建议
 
@@ -138,30 +143,28 @@ qiniu-xengineer-ai-pr-review/
 - deleted lines
 - 单文件新增/删除数量
 
-为控制上下文长度，系统会对超长 patch 做截断，并在规则分析和 AI 输入中仅保留必要信息。
+为了控制上下文长度，系统会对超长 patch 做截断，并优先将高风险文件、认证/配置/依赖敏感文件和高改动文件送入 AI Reviewer。
 
 ## 误报与漏报控制
 
-本项目使用“规则分析 + AI 总结”的混合方案，分别控制误报与漏报：
-
 ### 降低误报
 
-- 将高确定性问题交给规则识别，例如硬编码密钥、危险函数、依赖文件变更
-- 对结果输出 `severity` 与 `confidence`，避免把所有问题都当作阻断项
-- AI 仅基于真实的 PR 信息、文件变更和规则输出生成总结，不允许编造文件或风险
+- 将高确定性问题交给规则识别，例如硬编码密钥、危险函数、依赖变更、权限敏感改动
+- 对规则加入误报抑制，例如忽略文档示例、测试假数据、日志中的敏感词
+- 输出 `severity` 与 `confidence`，避免把所有提示都当作阻断项
 
 ### 降低漏报
 
-- 规则覆盖安全、稳定性、依赖、配置、测试缺失等高频风险模式
-- AI 在规则结果之外补充对整体改动意图和主要影响面的理解
-- 当 PR 改动较大但未包含测试文件时，单独提示回归风险
+- 规则覆盖安全、稳定性、配置、权限、测试等高频风险模式
+- AI 在规则结果之外补充对整体改动影响面的理解
+- 当 PR 变更较大但缺少测试时，单独提示回归风险
 
 ### 当前限制
 
 - GitHub 未认证请求容易触发 rate limit
 - 超长 patch 会被截断，极大 PR 的上下文可能不完整
 - AI Review 质量依赖用户配置的模型能力
-- 当前规则库仍以高价值通用规则为主，暂未做语言/框架专属深度检查
+- 当前规则库以高价值通用规则为主，尚未做语言/框架级深度专项检查
 
 ## 本地运行
 
@@ -192,10 +195,30 @@ npm install
 npm run dev
 ```
 
-前端默认访问：
+默认访问地址：
 
 - 前端：`http://127.0.0.1:5173`
 - 后端：`http://127.0.0.1:8000`
+
+## Windows 一键启动
+
+如果你在 Windows 上本地开发或录制 demo，可以直接使用根目录的 `start-dev.bat` 一键启动前后端。
+
+- 适用环境：Windows + 已安装 Python / Node.js
+- 使用方式：
+  - 直接双击 `start-dev.bat`
+  - 或在 `cmd` 中运行 `start-dev.bat`
+- 首次运行会自动安装依赖，耗时可能更长
+- 脚本会自动：
+  - 检查 `python` / `pip` / `node` / `npm`
+  - 自动复制 `backend/.env.example` 和 `frontend/.env.example`
+  - 安装后端和前端依赖
+  - 启动 FastAPI 后端与 Vite 前端
+  - 自动打开浏览器访问前端页面
+- 默认地址：
+  - 前端：`http://127.0.0.1:5173`
+  - 后端：`http://127.0.0.1:8000`
+- 停止方式：关闭脚本拉起的两个 `cmd` 窗口即可
 
 ## 使用流程
 
@@ -206,35 +229,24 @@ npm run dev
 5. 可选勾选 AI Review
 6. 点击“开始分析”
 7. 查看 PR 信息、风险结果、AI 建议和 Markdown 报告
-8. 复制 Markdown 报告用于二次分享或贴回 PR
+8. 复制 Markdown 报告用于分享或粘贴回 GitHub PR
 
 ## Demo 与截图
 
 ### Demo 视频
 
-- 待补充：将在最终录制完成后更新公开可访问的视频链接
-
-#### Demo 录制前检查清单
-
-- 前后端服务均可正常启动
-- 准备一个可稳定分析的公开 GitHub PR 链接
-- 准备一组不启用 AI 的演示流程
-- 准备一组启用 AI 的演示流程
-- 确认 Markdown 报告复制按钮可正常使用
-- 确认 README 中的仓库地址、视频地址和截图说明完整
+- 待补充：录制完成后更新公开可访问的视频链接
 
 ### 页面截图
 
 - 截图目录：`screenshots/`
-- 当前建议保留以下演示画面：
+- 建议保留以下画面：
   - 输入表单页
-  - 成功分析结果页
-  - 风险表格与 AI Review 展示页
-  - Markdown 报告复制效果页
+  - 分析结果总览页
+  - 风险表格页
+  - Markdown 报告页
 
-#### README 截图展示占位
-
-以下内容可在截图准备完成后直接替换为真实图片链接：
+### README 截图占位
 
 ```markdown
 ![Review Form](./screenshots/review-form.png)
@@ -243,74 +255,35 @@ npm run dev
 ![Markdown Report](./screenshots/review-markdown-report.png)
 ```
 
-#### Demo 讲解脚本
+### Demo 脚本
 
 - 录制讲解脚本见：`docs/demo-script.md`
-- 建议控制在 2 到 3 分钟内，优先讲清“问题背景、分析流程、风险识别、AI 建议、Markdown 报告输出”这 5 个部分
-
-## 最终提交前检查清单
-
-- 公开仓库链接可正常访问，且主分支代码可运行
-- README 已包含项目简介、运行方式、技术方案、模型说明和未来扩展方向
-- README 已预留 Demo 视频链接位置，并可在录制完成后直接替换
-- `screenshots/` 目录中的截图素材已整理完毕，可直接用于 README 或答辩展示
-- 演示流程已覆盖 PR 输入、规则分析、AI Review、Markdown 报告复制
-- 提交记录与 PR 节奏符合比赛要求，避免只有最后一天集中提交
-
-## 开发过程与 PR 留痕
-
-项目采用“小步提交、持续交付、按功能拆分 PR”的方式开发，当前已完成的主线包括：
-
-- PR 2：初始化后端服务
-- PR 3：获取 GitHub PR 元数据与文件信息
-- PR 4：实现 Diff 解析与规则风险分析
-- PR 5：集成 AI Review 生成
-- PR 6：构建前端 Review 工作台
-
-后续冲刺会继续拆分文档、测试、可解释性和前端展示优化，保留 merge commit，确保评委可以直接从 GitHub 历史中看到持续开发过程。
-
-## 示例 Review 报告
-
-- 示例文档见：`docs/review-example.md`
-- 建议在答辩或 README 展示时，结合该示例说明系统最终输出不是一句话总结，而是结构化的 Review 结果
+- 建议控制在 2 到 3 分钟内，优先讲清“问题背景、分析链路、风险识别、AI 建议、Markdown 报告输出”
 
 ## 评分点映射
 
-### 1. 作品完整度与创新性
+### 作品完整度与创新性
 
-- 完整流程覆盖：PR URL 输入 -> GitHub 数据获取 -> Diff 解析 -> 规则分析 -> AI Review -> Markdown 报告输出
-- 不是简单聊天式问答，而是围绕真实开发者 Review 场景设计
-- 规则分析与 AI 结合，兼顾可解释性与自然语言表达
+- 具备从 PR 链接到最终报告输出的完整链路
+- 规则引擎与 AI Reviewer 双引擎协同，有明确创新表达
+- 页面展示不仅给结果，还解释“为什么得到这个结果”
 
-### 2. 开发过程与质量
+### 开发过程与质量
 
-- 仓库采用多分支、小步提交、持续交付方式推进
-- 后端已经补充核心单元测试与路由测试
-- 前后端主流程已支持本地联调与稳定构建
+- 使用多分支与 PR 持续开发
+- 主分支保持可运行
+- 后端测试、构建与编译检查可通过
 
-### 3. 演示与表达
+### 演示与表达
 
-- README 已包含项目简介、系统架构、模型说明、上下文获取方式和未来扩展方向
-- 已补充 Demo 录制检查清单、截图占位和讲解脚本
-- 示例 Review 报告可直接用于答辩展示和功能讲解
+- README 包含项目简介、能力说明、技术方案与创新表达
+- 页面适合录屏展示，首屏和结果页都能快速传达价值
+- 输出 Markdown 报告，便于展示最终产物
 
 ## 未来扩展方向
 
-- 支持 GitHub App 模式，自动回写 PR 评论
-- 支持团队自定义规则库和风险策略
-- 支持更多语言与框架的专用静态检查
-- 支持历史 Review 记录与团队知识沉淀
-- 支持接入 CI/CD，在 PR 阶段自动触发分析
-
-## 安全说明
-
-- GitHub Token 仅用于本次请求，不保存到 localStorage、sessionStorage 或 cookie
-- 不要把任何真实 Token 或 API Key 提交到仓库
-- AI Review 只作为辅助建议，最终合并决策仍需人工确认
-
-## 相关文档
-
-- 后端说明：`backend/README.md`
-- 前端说明：`frontend/README.md`
-- 设计说明：`docs/design.md`
-- PR 开发计划：`docs/pr-plan.md`
+- 输出逐条 review comment 草稿，而不只是全局报告
+- 支持团队自定义规则配置
+- 增加语言/框架专项规则
+- 支持 GitHub App、Webhook 或 CI 自动触发
+- 支持历史 PR 复盘与团队知识沉淀
