@@ -71,6 +71,7 @@ def test_review_route_returns_rule_based_response(monkeypatch) -> None:
     assert payload["analysis_trace"]["fallback_reason"] is None
     assert payload["analysis_trace"]["top_risk_file_count"] >= 1
     assert payload["analysis_trace"]["ai_context_file_count"] == 0
+    assert payload["analysis_trace"]["ai_focus_files"] == []
     assert payload["markdown_report"]
 
 
@@ -129,10 +130,14 @@ def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
 
     monkeypatch.setattr(review_route.GitHubService, "fetch_pull_request_context", fake_fetch)
     monkeypatch.setattr(review_route.LLMReviewer, "is_configured", lambda self: True)
-    monkeypatch.setattr(
-        review_route.LLMReviewer,
-        "generate_review",
-        lambda self, pr, files, risks, risk_summary, stats: {
+
+    def fake_generate_review(self, pr, files, risks, risk_summary, stats):
+        self.last_prompt_metadata = {
+            "ai_context_file_count": 1,
+            "top_risk_file_count": 1,
+            "ai_focus_files": ["app/review.py"],
+        }
+        return {
             "enabled": True,
             "error": None,
             "pr_summary": "AI summary for review route",
@@ -141,8 +146,9 @@ def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
             "review_suggestions": ["Replace demo secret"],
             "overall_risk_level": "High",
             "confidence": "High",
-        },
-    )
+        }
+
+    monkeypatch.setattr(review_route.LLMReviewer, "generate_review", fake_generate_review)
     monkeypatch.setattr(
         review_route,
         "get_settings",
@@ -168,6 +174,7 @@ def test_review_route_returns_ai_assisted_response(monkeypatch) -> None:
     assert payload["summary"] == "AI summary for review route"
     assert payload["analysis_trace"]["ai_status"] == "completed"
     assert payload["analysis_trace"]["fallback_reason"] is None
+    assert payload["analysis_trace"]["ai_focus_files"] == ["app/review.py"]
 
 
 def test_review_route_marks_ai_fallback_when_generation_fails(monkeypatch) -> None:

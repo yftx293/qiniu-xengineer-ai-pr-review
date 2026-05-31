@@ -55,6 +55,8 @@ def test_build_review_prompt_prioritizes_risky_files() -> None:
 
     assert reviewer.last_prompt_metadata["top_risk_file_count"] == 1
     assert reviewer.last_prompt_metadata["ai_context_file_count"] >= 1
+    assert reviewer.last_prompt_metadata["ai_focus_files"][0] == "backend/app/auth_service.py"
+    assert "backend/app/auth_service.py" in reviewer.last_prompt_metadata["ai_focus_files"]
 
 
 def test_parse_model_json_accepts_fenced_json() -> None:
