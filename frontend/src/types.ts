@@ -84,6 +84,7 @@ export interface AnalysisTrace {
   fallback_reason?: string | null;
   top_risk_file_count?: number | null;
   ai_context_file_count?: number | null;
+  ai_focus_files?: string[] | null;
 }
 
 export interface ReviewResponse {
