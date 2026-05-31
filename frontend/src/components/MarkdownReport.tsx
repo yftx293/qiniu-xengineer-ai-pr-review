@@ -84,7 +84,10 @@ export default function MarkdownReport({
   return (
     <section className={sectionClassName}>
       <div className="card-head-row">
-        <h3>Markdown 报告</h3>
+        <div>
+          <p className="eyebrow">Export</p>
+          <h3>可复制的 Markdown 审查报告</h3>
+        </div>
         <div className="card-actions">
           <button type="button" className="btn" onClick={handleSelectAll}>
             全选
