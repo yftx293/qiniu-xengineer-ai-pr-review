@@ -1,84 +1,126 @@
 # CodeLens AI PR Review Assistant
 
-CodeLens 是一个面向开发者的 AI Pull Request 代码评审助手，面向七牛云 × XEngineer 暑期实训营题目三“AI PR Review 助手”设计。用户输入 GitHub PR 链接后，系统会自动抓取 PR 元数据、变更文件和 patch 内容，结合规则引擎与 AI Reviewer 生成结构化代码审查结果，并输出可复制的 Markdown Review 报告。
+<p align="center">
+  <strong>让 GitHub Pull Request 审查更快、更稳、更像一位有经验的 reviewer。</strong>
+</p>
 
-仓库地址：<https://github.com/yftx293/qiniu-xengineer-ai-pr-review>
+<p align="center">
+  <img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-5dd4f1?style=flat-square" alt="Frontend" />
+  <img src="https://img.shields.io/badge/Backend-FastAPI-0ea5a4?style=flat-square" alt="Backend" />
+  <img src="https://img.shields.io/badge/Review-AI%20Assisted-2563eb?style=flat-square" alt="AI Assisted" />
+  <img src="https://img.shields.io/badge/Engine-Rule%20Engine-0f172a?style=flat-square" alt="Rule Engine" />
+  <img src="https://img.shields.io/badge/Output-Markdown%20Report-7c3aed?style=flat-square" alt="Markdown Report" />
+</p>
 
-## 项目亮点
+<p align="center">
+  输入 GitHub PR 链接，自动获取 diff、识别高风险改动、生成结构化 Review 建议，并输出可直接复制的 Markdown 报告。
+</p>
 
-- 不是简单的大模型问答，而是完整的 `PR URL -> GitHub 数据获取 -> Diff 解析 -> 风险识别 -> AI 总结 -> Markdown 报告` 流程。
-- 采用 `Rule Engine + AI Reviewer` 双引擎协同方案：规则负责识别高确定性风险，AI 负责总结影响面和生成 reviewer 风格建议。
-- 输出结果可直接服务真实开发流程，支持复制 Markdown 报告用于 GitHub PR 评论区、团队内部复盘或演示展示。
+---
 
-## 对应赛题要求
+## Why CodeLens
 
-本项目覆盖题目三的核心要求：
+CodeLens 不是一个“把 diff 扔给大模型问一句怎么看”的页面，而是一条完整的 PR Review 工作流：
 
-- 支持 PR 变更总结
-- 支持风险代码识别
-- 支持 Review 建议生成
-- 说明模型选择
-- 说明上下文获取方式
-- 说明误报与漏报控制
-- 说明未来扩展方向
+- 自动获取 GitHub Pull Request 元数据、变更文件和 patch 内容
+- 基于规则引擎识别高确定性风险，例如敏感信息、危险执行、SQL 拼接、测试缺失等
+- 使用 AI Reviewer 结合关键上下文生成更像真实 reviewer 的总结与建议
+- 最终输出结构化 Markdown Review 报告，直接服务真实协作流程
 
-## 核心能力
+如果你正在做代码评审、团队 code review、PR 质量巡检，或者想把 AI 能力嵌入开发流程，CodeLens 的目标就是把这件事做得更可靠、更可解释，而不是更花哨。
 
-### 1. GitHub PR 数据获取
+## Product Preview
 
-- 解析 `https://github.com/{owner}/{repo}/pull/{number}` 格式 PR 链接
-- 获取 PR 标题、作者、状态、分支、变更文件数、增删行数
-- 获取 changed files、patch、raw/blob 地址
-- 支持传入 GitHub Token，缓解 GitHub API rate limit
+### Demo Video
 
-### 2. Diff 解析与规则风险识别
+> Demo 视频即将补充。录制脚本见 [docs/demo-script.md](./docs/demo-script.md)。
+
+### Screenshots
+
+当前仓库已预留展示位，建议最终 README 放入以下四张截图：
+
+| Screen | Recommended Content |
+| --- | --- |
+| Home / Input Console | 首页输入区与产品首屏说明 |
+| Review Overview | 审查结果 Hero、核心统计与风险概览 |
+| Risk Table | 风险表格与筛选器 |
+| Markdown Report | 可复制的最终报告输出 |
+
+截图目录：[`screenshots/`](./screenshots/)
+
+示例占位：
+
+```markdown
+![Home Console](./screenshots/home-console.png)
+![Review Overview](./screenshots/review-overview.png)
+![Risk Table](./screenshots/risk-table.png)
+![Markdown Report](./screenshots/markdown-report.png)
+```
+
+## What It Does
+
+### 1. GitHub PR Data Fetching
+
+- 解析标准 GitHub PR URL
+- 获取 PR 标题、作者、分支、状态、文件数、增删行数
+- 拉取 changed files、patch、raw/blob 地址
+- 支持传入 GitHub Token，缓解 API rate limit
+
+### 2. Diff Parsing
 
 - 解析 patch hunk、added lines、deleted lines
-- 识别硬编码密钥、危险函数、异常吞掉、SQL 拼接、敏感日志输出、依赖变更、配置变更、权限敏感改动、CI/Deploy 敏感变更、测试缺失等风险
-- 输出风险等级 `severity` 与置信度 `confidence`
+- 提取每个文件的关键变更片段
+- 为规则引擎和 AI Reviewer 提供结构化上下文
 
-### 3. AI Reviewer
+### 3. Rule-Based Risk Detection
+
+- 识别硬编码密钥、危险函数、异常吞掉、SQL 拼接、敏感日志输出
+- 识别依赖变更、配置变更、权限敏感改动、CI / Deploy 敏感变更
+- 识别大改动但测试不足的回归风险
+- 输出 `severity` 与 `confidence`，让风险优先级更清晰
+
+### 4. AI Reviewer
 
 - 在 `use_ai=true` 时调用 OpenAI-compatible Chat Completions API
-- 优先基于高风险文件、认证/配置/依赖敏感文件和关键 patch 做上下文总结
-- 生成 PR 总结、主要变更、风险分析和 reviewer 风格建议
-- AI 配置缺失或调用失败时自动 fallback 到规则分析模式
+- 优先关注高风险文件、认证/配置/依赖敏感文件和关键 patch
+- 生成 PR 总结、主要变更、风险研判和 reviewer 风格建议
+- 在 AI 不可用时自动 fallback 到规则分析，保证主流程仍然可用
 
-### 4. Review 工作台
+### 5. Markdown Review Report
 
-- 输入 GitHub PR URL
-- 可选输入 GitHub Token
-- 可选启用 AI Review
-- 展示 PR 基本信息、风险概览、分析链路、风险详情、AI Review、Markdown 报告
+- 汇总 PR 基本信息、风险详情、AI 结果和分析链路
+- 生成可复制的 Markdown 审查报告
+- 可直接用于 GitHub PR 评论区、团队复盘或审查归档
 
-## 创新点如何落地
+## Why It Is Different
 
-### 1. 不是聊天回答，而是结构化审查流程
+### Rule Engine + AI Reviewer
 
-CodeLens 不是“把 diff 扔给大模型然后问一句怎么看”，而是将 PR 数据获取、Diff 解析、规则识别、AI 归纳和报告输出串成一个完整产品闭环。
+CodeLens 的核心不是“大模型看代码”，而是双引擎协同：
 
-### 2. 不是单一模型判断，而是规则与模型协作
+- **Rule Engine**：负责高确定性风险发现，优先识别容易被忽略但代价高的问题
+- **AI Reviewer**：负责理解变更影响面，组织 reviewer 风格表达，补充上下文级建议
 
-- Rule Engine：负责高确定性风险识别，例如敏感信息、危险执行、权限敏感改动、测试缺失
-- AI Reviewer：负责基于关键上下文组织 reviewer 风格总结，补充影响面分析和可执行建议
+这种组合的价值在于：
 
-这种设计可以同时降低误报和漏报，也更容易让评委看见“产品方法论”。
+- 比单纯聊天问答更稳定
+- 比只做 diff summarization 更可解释
+- 比纯规则扫描更接近真实代码评审场景
 
-### 3. 不是停留在页面展示，而是可落地 Markdown 输出
+### Not Just a Summary Tool
 
-最终结果会生成一份结构化 Markdown Review 报告，适合复制到 GitHub PR 评论区或用于团队内部复盘，体现真实开发场景价值。
+CodeLens 不只做“改了什么”的总结，还试图回答：
 
-## 示例审查场景
+- 哪些改动值得优先复核
+- 为什么这次变更存在潜在风险
+- AI 的判断是基于哪些上下文得出的
+- 哪些结论适合直接转成 PR review comment
 
-- 安全风险型 PR：识别硬编码密钥、危险执行、敏感日志输出、SQL 拼接
-- 权限敏感型 PR：识别 auth / permission / middleware 相关改动，提示重点做越权与失败路径测试
-- 大改动缺少测试型 PR：识别高改动但无测试更新的情况，提示回归风险
-
-## 系统架构
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[用户输入 GitHub PR URL] --> B[React Review Workspace]
+    A[GitHub PR URL] --> B[React Review Workspace]
     B --> C[FastAPI Review API]
     C --> D[PR URL Parser]
     C --> E[GitHub Service]
@@ -87,88 +129,55 @@ flowchart LR
     C --> H[Risk Analyzer]
     C --> I[LLM Reviewer]
     I --> J[OpenAI-compatible API]
-    H --> K[规则风险结果]
-    I --> L[AI Review 结果]
+    H --> K[Rule Findings]
+    I --> L[AI Review Result]
     K --> M[Report Service]
     L --> M
-    M --> N[Markdown Review 报告]
+    M --> N[Markdown Review Report]
     N --> B
 ```
 
-## 技术栈
+完整数据流可以概括为：
 
-### 前端
+`PR URL -> GitHub 数据获取 -> Diff 解析 -> 风险识别 -> AI 审查 -> Markdown 报告输出`
 
-- React
-- Vite
-- TypeScript
+这让 CodeLens 更像一个完整产品，而不是单点 AI 功能。
 
-### 后端
+## Example Output
 
-- Python
-- FastAPI
-- Pydantic
-- Requests
+- 审查报告示例：[`docs/review-example.md`](./docs/review-example.md)
+- Demo 讲解脚本：[`docs/demo-script.md`](./docs/demo-script.md)
 
-### 外部服务
+如果你想快速理解这个项目最终会输出什么，建议先看示例报告，它比单纯看界面更能说明产品价值。
 
-- GitHub REST API
-- OpenAI-compatible LLM API
+## Quick Start
 
-## 模型选择说明
+### Windows 一键启动
 
-当前项目采用 OpenAI-compatible Chat Completions API，原因如下：
+如果你在 Windows 本地开发、联调或录制 Demo，推荐直接使用根目录的 `start-dev.bat`：
 
-- 接口通用，便于适配不同模型服务商
-- 适合在短周期比赛中快速完成联调
-- 能够结合规则结果与关键 patch 上下文输出结构化中文 Review
+```cmd
+start-dev.bat
+```
 
-当前实现对模型能力的要求主要包括：
+脚本会自动：
 
-- 读取 PR 元数据与关键 patch 摘要
-- 理解规则分析结果
-- 输出固定 JSON 结构的总结与建议
+- 检查 `python` / `pip` / `node` / `npm`
+- 复制 `backend/.env.example` 和 `frontend/.env.example`
+- 安装前后端依赖
+- 启动 FastAPI 后端与 Vite 前端
+- 自动打开浏览器访问前端页面
 
-## 上下文获取方式
+默认地址：
 
-系统通过 GitHub REST API 获取上下文，主要包括两类信息：
+- Frontend: `http://127.0.0.1:5173`
+- Backend: `http://127.0.0.1:8000`
 
-- `pulls/{pull_number}`：获取 PR 标题、作者、状态、分支、增删行数、变更文件数
-- `pulls/{pull_number}/files`：获取 changed files、status、patch、raw/blob 地址
+如果双击失败，脚本会保留窗口显示错误；也可以在 `cmd` 中运行查看完整输出。
 
-后端会进一步对 patch 做 Diff 解析，提取：
+### Manual Local Run
 
-- hunk header
-- added lines
-- deleted lines
-- 单文件新增/删除数量
-
-为了控制上下文长度，系统会对超长 patch 做截断，并优先将高风险文件、认证/配置/依赖敏感文件和高改动文件送入 AI Reviewer。
-
-## 误报与漏报控制
-
-### 降低误报
-
-- 将高确定性问题交给规则识别，例如硬编码密钥、危险函数、依赖变更、权限敏感改动
-- 对规则加入误报抑制，例如忽略文档示例、测试假数据、日志中的敏感词
-- 输出 `severity` 与 `confidence`，避免把所有提示都当作阻断项
-
-### 降低漏报
-
-- 规则覆盖安全、稳定性、配置、权限、测试等高频风险模式
-- AI 在规则结果之外补充对整体改动影响面的理解
-- 当 PR 变更较大但缺少测试时，单独提示回归风险
-
-### 当前限制
-
-- GitHub 未认证请求容易触发 rate limit
-- 超长 patch 会被截断，极大 PR 的上下文可能不完整
-- AI Review 质量依赖用户配置的模型能力
-- 当前规则库以高价值通用规则为主，尚未做语言/框架级深度专项检查
-
-## 本地运行
-
-### 1. 启动后端
+#### Backend
 
 ```bash
 cd backend
@@ -176,9 +185,10 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-可选 `.env` 配置：
+推荐环境变量：
 
 ```env
+GITHUB_TOKEN=
 OPENAI_API_KEY=
 OPENAI_BASE_URL=
 OPENAI_MODEL=
@@ -187,7 +197,7 @@ LLM_TIMEOUT=30
 LLM_MAX_INPUT_CHARS=20000
 ```
 
-### 2. 启动前端
+#### Frontend
 
 ```bash
 cd frontend
@@ -195,95 +205,53 @@ npm install
 npm run dev
 ```
 
-默认访问地址：
+前端默认会通过 `frontend/.env` 中的 `VITE_API_BASE_URL` 访问后端。
 
-- 前端：`http://127.0.0.1:5173`
-- 后端：`http://127.0.0.1:8000`
+## Tech Stack
 
-## Windows 一键启动
+### Frontend
 
-如果你在 Windows 上本地开发或录制 demo，可以直接使用根目录的 `start-dev.bat` 一键启动前后端。
+- React
+- Vite
+- TypeScript
 
-- 适用环境：Windows + 已安装 Python / Node.js
-- 使用方式：
-  - 直接双击 `start-dev.bat`
-  - 或在 `cmd` 中运行 `start-dev.bat`
-- 首次运行会自动安装依赖，耗时可能更长
-- 脚本会自动：
-  - 检查 `python` / `pip` / `node` / `npm`
-  - 自动复制 `backend/.env.example` 和 `frontend/.env.example`
-  - 安装后端和前端依赖
-  - 启动 FastAPI 后端与 Vite 前端
-  - 自动打开浏览器访问前端页面
-- 默认地址：
-  - 前端：`http://127.0.0.1:5173`
-  - 后端：`http://127.0.0.1:8000`
-- 停止方式：关闭脚本拉起的两个 `cmd` 窗口即可
+### Backend
 
-## 使用流程
+- Python
+- FastAPI
+- Pydantic
+- Requests
 
-1. 启动前后端服务
-2. 打开前端页面
-3. 输入 GitHub PR URL
-4. 可选填写 GitHub Token
-5. 可选勾选 AI Review
-6. 点击“开始分析”
-7. 查看 PR 信息、风险结果、AI 建议和 Markdown 报告
-8. 复制 Markdown 报告用于分享或粘贴回 GitHub PR
+### External Services
 
-## Demo 与截图
+- GitHub REST API
+- OpenAI-compatible LLM API
 
-### Demo 视频
+## Limitations
 
-- 待补充：录制完成后更新公开可访问的视频链接
+- 未认证 GitHub API 请求容易触发 rate limit，建议传入 GitHub Token
+- 超长 patch 会被截断，极大 PR 的上下文可能不完整
+- AI 审查质量依赖所配置的模型能力与稳定性
+- 当前规则库以高价值通用规则为主，尚未做语言/框架专项深度审查
+- 当前版本主要聚焦本地运行与 Demo 展示，不包含 GitHub App 自动评论能力
 
-### 页面截图
+## Roadmap
 
-- 截图目录：`screenshots/`
-- 建议保留以下画面：
-  - 输入表单页
-  - 分析结果总览页
-  - 风险表格页
-  - Markdown 报告页
+- [ ] GitHub App / 自动评论到 PR
+- [ ] 团队级自定义规则与 review policy
+- [ ] 面向不同语言/框架的专项规则包
+- [ ] 历史 PR 审查记录沉淀与知识库化
+- [ ] 更细粒度的 file-level / comment-level review suggestions
 
-### README 截图占位
+## Repository Structure
 
-```markdown
-![Review Form](./screenshots/review-form.png)
-![Review Result Overview](./screenshots/review-result-overview.png)
-![Risk Table](./screenshots/review-risk-table.png)
-![Markdown Report](./screenshots/review-markdown-report.png)
+```text
+backend/      FastAPI review service
+frontend/     React review workspace
+docs/         Demo script, example output, design notes
+screenshots/  README preview assets
 ```
 
-### Demo 脚本
+## Acknowledgements
 
-- 录制讲解脚本见：`docs/demo-script.md`
-- 建议控制在 2 到 3 分钟内，优先讲清“问题背景、分析链路、风险识别、AI 建议、Markdown 报告输出”
-
-## 评分点映射
-
-### 作品完整度与创新性
-
-- 具备从 PR 链接到最终报告输出的完整链路
-- 规则引擎与 AI Reviewer 双引擎协同，有明确创新表达
-- 页面展示不仅给结果，还解释“为什么得到这个结果”
-
-### 开发过程与质量
-
-- 使用多分支与 PR 持续开发
-- 主分支保持可运行
-- 后端测试、构建与编译检查可通过
-
-### 演示与表达
-
-- README 包含项目简介、能力说明、技术方案与创新表达
-- 页面适合录屏展示，首屏和结果页都能快速传达价值
-- 输出 Markdown 报告，便于展示最终产物
-
-## 未来扩展方向
-
-- 输出逐条 review comment 草稿，而不只是全局报告
-- 支持团队自定义规则配置
-- 增加语言/框架专项规则
-- 支持 GitHub App、Webhook 或 CI 自动触发
-- 支持历史 PR 复盘与团队知识沉淀
+CodeLens 诞生于一次高强度实战开发周期，但它的目标不是完成一道题，而是验证一条更贴近真实工程协作的 AI PR Review 产品路径。
