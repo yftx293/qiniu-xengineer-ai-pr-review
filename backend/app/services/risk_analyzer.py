@@ -121,18 +121,18 @@ class RiskAnalyzer:
         if "Hardcoded Secret" in types or "Sensitive Data Logging" in types:
             suggestions.append("建议复核敏感信息的读取、传递和打印链路，确保凭据不会直接出现在代码、日志或返回值中。")
         if "Dangerous Function Usage" in types:
-            suggestions.append("建议确认危险执行入口是否可被外部输入影响，必要时改用白名单参数和非 shell 模式。")
+            suggestions.append("建议确认危险执行入口是否可能受外部输入影响，必要时改用参数化调用并显式关闭 shell。")
         if "Potential SQL Injection" in types:
-            suggestions.append("建议将动态 SQL 改为参数化查询，并确认输入在进入数据库层前已经过约束或转义。")
+            suggestions.append("建议将动态 SQL 改为参数化查询，并确认输入在进入数据库层前已完成约束或转义。")
         if "Missing Tests" in types or "Test Coverage Regression" in types or "Large Change Set" in types:
-            suggestions.append("建议为关键改动补充回归测试，尤其覆盖权限边界、异常路径和高改动文件。")
+            suggestions.append("建议为关键改动补充回归测试，优先覆盖权限边界、异常路径和高改动文件。")
         if "Auth/Permission Sensitive Change" in types:
-            suggestions.append("建议补充鉴权失败、越权访问和角色边界的负向用例，确认权限变更不会放宽访问范围。")
+            suggestions.append("建议补充鉴权失败、越权访问和角色边界的负向用例，确认权限变更不会意外放宽访问范围。")
         if "CI/Deploy Sensitive Change" in types or "Configuration Change" in types:
-            suggestions.append("建议在目标环境复核配置和发布流水线差异，确认运行参数、密钥注入和部署步骤未被意外改变。")
+            suggestions.append("建议在目标环境复核配置和发布流水线差异，确认运行参数、密钥注入和回滚步骤未被意外改变。")
 
         if not suggestions:
-            suggestions.append("建议结合业务上下文进行二次人工 Review，重点确认规则未覆盖到的语义风险。")
+            suggestions.append("建议结合业务上下文进行二次人工 Review，重点确认规则尚未覆盖到的语义风险。")
         return suggestions
 
     def build_risk_summary(self, risks: list[dict[str, Any]]) -> dict[str, Any]:
@@ -166,7 +166,7 @@ class RiskAnalyzer:
                 continue
 
             confidence = "High" if self._looks_like_real_secret_assignment(content) else "Medium"
-            message = "疑似将敏感凭据直接写入代码。若该值来自真实环境，会带来泄露和轮换困难。"
+            message = "疑似将敏感凭据直接写入代码。若该值来自真实环境，后续轮换和泄露控制都会变得困难。"
             suggestion = "建议改为从环境变量、密钥管理服务或运行时注入配置读取，并确认示例值不会进入生产分支。"
 
             risks.append(
@@ -197,13 +197,13 @@ class RiskAnalyzer:
 
             if "eval(" in lowered or "exec(" in lowered:
                 matched = True
-                message = "检测到动态执行代码逻辑。若执行内容受外部输入影响，容易引入远程执行风险。"
+                message = "检测到动态执行代码逻辑。若执行内容受到外部输入影响，可能引入远程执行风险。"
                 suggestion = "建议避免直接使用 eval/exec；如确有必要，应限制可执行内容并建立严格白名单。"
                 confidence = "High"
             elif "os.system(" in lowered:
                 matched = True
                 message = "检测到通过 shell 执行命令。若参数未做约束，可能引入命令注入风险。"
-                suggestion = "建议改用参数列表调用或更安全的库能力，并确认命令参数不直接拼接用户输入。"
+                suggestion = "建议改用参数列表调用或更安全的库能力，并确认命令参数不会直接拼接用户输入。"
                 confidence = "High"
             elif "subprocess" in lowered and "shell=true" in compact:
                 matched = True
@@ -242,9 +242,9 @@ class RiskAnalyzer:
                         line=line.get("line_no"),
                         severity="Medium",
                         risk_type="Swallowed Exception",
-                        message="异常被直接吞掉，真实故障会被隐藏，后续排障和告警定位都会变困难。",
+                        message="异常被直接吞掉，真实故障会被隐藏，后续排障和告警定位都会变得困难。",
                         evidence=line.get("content", ""),
-                        suggestion="建议至少记录异常上下文，并明确决定是降级处理、重试还是向上抛出。",
+                        suggestion="建议至少记录异常上下文，并明确决定是降级处理、重试还是继续向上抛出。",
                         confidence="High",
                     )
                 )
@@ -321,7 +321,7 @@ class RiskAnalyzer:
                     line=line.get("line_no"),
                     severity="Medium",
                     risk_type="Sensitive Data Logging",
-                    message="日志语句疑似输出了敏感字段。即使只在调试环境打印，也可能在收集链路中形成泄露面。",
+                    message="日志语句疑似输出了敏感字段。即使只在调试环境打印，也可能在采集链路中形成泄露面。",
                     evidence=content,
                     suggestion="建议移除敏感值输出，必要时仅保留脱敏后的标识信息或 trace id。",
                     confidence="Medium",

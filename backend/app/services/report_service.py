@@ -23,6 +23,7 @@ class ReportService:
         main_changes = self._pick_main_changes(ai_review, files)
         risk_analysis = self._pick_risk_analysis(ai_review, risks)
         review_suggestions = self._pick_suggestions(ai_review, suggestions)
+        ai_focus_files = [str(item) for item in analysis_trace.get("ai_focus_files", []) if str(item).strip()]
 
         lines: list[str] = []
         lines.append("# AI PR Review Report")
@@ -33,9 +34,7 @@ class ReportService:
         lines.append(f"- 状态: {pr.get('state', '')}")
         lines.append(f"- 分支: {pr.get('head_branch', '')} -> {pr.get('base_branch', '')}")
         lines.append(f"- 文件数: {stats.get('file_count', 0)}")
-        lines.append(
-            f"- additions / deletions: {stats.get('total_additions', 0)} / {stats.get('total_deletions', 0)}"
-        )
+        lines.append(f"- additions / deletions: {stats.get('total_additions', 0)} / {stats.get('total_deletions', 0)}")
         lines.append("")
 
         lines.append("## 2. 变更总结")
@@ -95,6 +94,11 @@ class ReportService:
         if ai_context_file_count is not None:
             lines.append(f"- ai_context_file_count: {ai_context_file_count}")
 
+        if ai_focus_files:
+            lines.append("- ai_focus_files:")
+            for item in ai_focus_files:
+                lines.append(f"  - {item}")
+
         rule_hits = analysis_trace.get("rule_hits_by_type", {}) or {}
         if rule_hits:
             lines.append("- rule_hits_by_type:")
@@ -104,15 +108,22 @@ class ReportService:
             lines.append("- rule_hits_by_type: none")
         lines.append("")
 
-        lines.append("## 9. 分析限制")
-        lines.append("- GitHub API 可能受未认证 rate limit 影响。")
+        lines.append("## 9. 审查策略说明")
+        lines.append("- 规则引擎负责识别高确定性风险信号，例如敏感信息、危险执行入口、SQL 拼接和测试回退。")
+        lines.append("- AI Reviewer 负责结合关键 diff 和规则命中结果，归纳影响面、补充风险解释并生成更自然的评审建议。")
+        if ai_focus_files:
+            lines.append("- 本次 AI 重点关注的文件见 analysis_trace.ai_focus_files，可优先回到这些文件做二次确认。")
+        lines.append("")
+
+        lines.append("## 10. 分析限制")
+        lines.append("- GitHub API 可能受到未认证 rate limit 影响。")
         lines.append("- 超长 patch 会被截断，极大 PR 的上下文可能不完整。")
         lines.append("- AI 结论主要用于辅助判断，最终是否合并仍需结合业务背景和人工 Review。")
         lines.append("- 规则命中提供的是高价值线索，不等同于已经确认存在缺陷。")
         lines.append("")
 
-        lines.append("## 10. 说明")
-        lines.append("本报告由规则分析和可选 AI 协同生成：规则负责提供高确定性线索，AI 负责补充上下文理解和评审表达。")
+        lines.append("## 11. 说明")
+        lines.append("本报告由规则分析与可选 AI 协同生成：规则负责发现确定性风险线索，AI 负责补充上下文理解和评审表达。")
 
         ai_section = self.format_ai_review(ai_review)
         if ai_section:

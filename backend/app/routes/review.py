@@ -84,6 +84,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
     ai_review = None
     ai_context_file_count = 0
     top_risk_file_count = len({risk.get("file") for risk in rule_result["risks"] if risk.get("file") and risk.get("severity") in {"High", "Medium"}})
+    ai_focus_files: list[str] = []
 
     if payload.use_ai:
         settings = get_settings()
@@ -105,6 +106,11 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         )
         ai_context_file_count = int(llm_reviewer.last_prompt_metadata.get("ai_context_file_count", 0) or 0)
         top_risk_file_count = int(llm_reviewer.last_prompt_metadata.get("top_risk_file_count", top_risk_file_count) or 0)
+        ai_focus_files = [
+            str(item).strip()
+            for item in (llm_reviewer.last_prompt_metadata.get("ai_focus_files") or [])
+            if str(item).strip()
+        ][:5]
 
         if ai_configured and ai_review.get("enabled"):
             review_mode = "ai_assisted"
@@ -135,6 +141,7 @@ def review_pr(payload: ReviewRequest) -> ReviewResponse:
         "fallback_reason": fallback_reason,
         "top_risk_file_count": top_risk_file_count,
         "ai_context_file_count": ai_context_file_count,
+        "ai_focus_files": ai_focus_files,
     }
 
     summary = rule_summary
