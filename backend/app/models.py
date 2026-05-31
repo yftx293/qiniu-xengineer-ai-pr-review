@@ -108,6 +108,7 @@ class AnalysisTrace(BaseModel):
     fallback_reason: str | None = None
     top_risk_file_count: int | None = None
     ai_context_file_count: int | None = None
+    ai_focus_files: list[str] | None = None
 
 
 class ReviewResponse(BaseModel):

@@ -24,6 +24,7 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
             "fallback_reason": None,
             "top_risk_file_count": 0,
             "ai_context_file_count": 1,
+            "ai_focus_files": ["auth.py"],
         },
         ai_review={
             "enabled": True,
@@ -42,6 +43,7 @@ def test_build_markdown_report_uses_ai_summary_when_enabled() -> None:
     assert "登录链路被调整" in report
     assert "## 8. 分析链路" in report
     assert "github_api_pr_and_files" in report
+    assert "auth.py" in report
 
 
 def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
@@ -77,6 +79,7 @@ def test_build_markdown_report_falls_back_to_rule_suggestions() -> None:
             "fallback_reason": None,
             "top_risk_file_count": 1,
             "ai_context_file_count": 0,
+            "ai_focus_files": [],
         },
         ai_review=None,
     )

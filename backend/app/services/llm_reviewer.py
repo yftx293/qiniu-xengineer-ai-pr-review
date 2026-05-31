@@ -47,6 +47,7 @@ class LLMReviewer:
         self.last_prompt_metadata: dict[str, Any] = {
             "ai_context_file_count": 0,
             "top_risk_file_count": 0,
+            "ai_focus_files": [],
         }
 
     def is_configured(self) -> bool:
@@ -68,6 +69,7 @@ class LLMReviewer:
         self.last_prompt_metadata = {
             "ai_context_file_count": len(file_context),
             "top_risk_file_count": len(top_risk_files),
+            "ai_focus_files": [item.get("filename", "") for item in file_context[:5] if item.get("filename")],
         }
 
         prompt_payload = {
@@ -92,26 +94,29 @@ class LLMReviewer:
         }
         prompt_payload = self._fit_payload_to_budget(prompt_payload)
         context_notice = prompt_payload.get("context_notice", {})
+        prompt_files = prompt_payload.get("files", [])
         self.last_prompt_metadata["ai_context_file_count"] = int(context_notice.get("ai_context_file_count", 0) or 0)
         self.last_prompt_metadata["top_risk_file_count"] = int(context_notice.get("top_risk_file_count", 0) or 0)
+        self.last_prompt_metadata["ai_focus_files"] = [
+            item.get("filename", "") for item in prompt_files[:5] if item.get("filename")
+        ]
 
         system_message = (
-            "你是一名资深代码评审工程师，需要根据 PR 元信息、关键 diff 片段和规则命中结果给出专业评审结论。"
-            "你的目标不是机械罗列风险，而是像真实 reviewer 一样先判断影响面，再指出最值得追问的问题，再给出可执行建议。"
-            "输出必须是 JSON 对象，不要输出 Markdown 代码块，不要输出额外解释。"
+            "你是一名资深代码评审工程师，需要基于 PR 元信息、关键 diff 片段、规则命中结果和上下文提示，"
+            "生成专业、可信、可执行的中文评审结论。"
+            "请像真实 reviewer 一样先判断影响面，再解释最值得关注的风险，最后给出修改建议。"
+            "不要重复空洞模板句，不要机械复述规则名称，不要编造不存在的文件、业务背景或风险。"
+            "如果上下文存在截断或信息不足，可以指出还需要补看的具体位置，但表达必须具体。"
+            "输出必须是 JSON 对象，不要输出 Markdown 代码块，也不要输出额外说明。"
             "JSON 必须包含以下字段："
             "pr_summary(字符串), main_changes(字符串数组), risk_analysis(字符串数组), "
             "review_suggestions(字符串数组), overall_risk_level(High|Medium|Low), confidence(High|Medium|Low)。"
-            "要求："
-            "1. 语言使用中文，表达专业、自然、像资深 reviewer，而不是模板化口号。"
-            "2. 只基于给定上下文作答，禁止编造不存在的文件、风险或业务背景。"
-            "3. 如果存在不确定性，可以明确指出需要补看的上下文，但表述必须具体。"
-            "4. 风险分析优先解释影响和触发条件，不要只是重复规则名称。"
-            "5. 如果规则未发现明显高风险，也要给出有价值的人工复核建议。"
         )
 
         user_message = (
-            "请基于以下 JSON 数据生成评审结果。输出严格为 JSON：\n"
+            "请基于以下 JSON 数据生成评审结果。"
+            "优先关注 review_focus、risks 和 files 中的高风险上下文，避免平均分配注意力。"
+            "输出必须严格为 JSON。\n"
             f"{json.dumps(prompt_payload, ensure_ascii=False)}"
         )
 
@@ -230,7 +235,9 @@ class LLMReviewer:
         while len(serialized) > self.max_input_chars and len(risks) > 8:
             risks.pop()
             payload["risks"] = risks
-            payload["context_notice"]["top_risk_file_count"] = len({risk.get("file") for risk in risks if risk.get("file")})
+            payload["context_notice"]["top_risk_file_count"] = len(
+                {risk.get("file") for risk in risks if risk.get("file")}
+            )
             serialized = json.dumps(payload, ensure_ascii=False)
 
         if len(serialized) > self.max_input_chars:
@@ -274,7 +281,11 @@ class LLMReviewer:
     @staticmethod
     def _build_review_focus(files: list[dict[str, Any]], risks: list[dict[str, Any]]) -> list[str]:
         focus_points: list[str] = []
-        top_risks = sorted(risks, key=lambda item: SEVERITY_WEIGHT.get(str(item.get("severity", "")), 0), reverse=True)[:5]
+        top_risks = sorted(
+            risks,
+            key=lambda item: SEVERITY_WEIGHT.get(str(item.get("severity", "")), 0),
+            reverse=True,
+        )[:5]
         for risk in top_risks:
             risk_file = risk.get("file") or "PR-level"
             focus_points.append(f"{risk_file}: {risk.get('type', '')} - {risk.get('message', '')}")
@@ -317,7 +328,11 @@ class LLMReviewer:
 
     @staticmethod
     def _top_risk_files(risks: list[dict[str, Any]]) -> set[str]:
-        return {str(risk.get("file")) for risk in risks if risk.get("file") and risk.get("severity") in {"High", "Medium"}}
+        return {
+            str(risk.get("file"))
+            for risk in risks
+            if risk.get("file") and risk.get("severity") in {"High", "Medium"}
+        }
 
     @staticmethod
     def _parse_model_json(content: str) -> dict[str, Any] | None:
@@ -364,13 +379,22 @@ class LLMReviewer:
         if not pr_summary:
             pr_summary = LLMReviewer._default_summary(pr, risk_summary)
 
+        main_changes = LLMReviewer._coerce_string_list(payload.get("main_changes"))
+        risk_analysis = LLMReviewer._coerce_string_list(payload.get("risk_analysis"))
+        review_suggestions = LLMReviewer._coerce_string_list(payload.get("review_suggestions"))
+
+        if not risk_analysis and int(risk_summary.get("total", 0) or 0) > 0:
+            risk_analysis = ["本次改动已命中规则风险，请优先结合高风险文件与关键路径核查实际影响。"]
+        if not review_suggestions:
+            review_suggestions = ["建议结合高风险文件补充人工复核，并确认异常路径、权限边界和回归覆盖是否完整。"]
+
         return {
             "enabled": True,
             "error": None,
             "pr_summary": pr_summary,
-            "main_changes": LLMReviewer._coerce_string_list(payload.get("main_changes")),
-            "risk_analysis": LLMReviewer._coerce_string_list(payload.get("risk_analysis")),
-            "review_suggestions": LLMReviewer._coerce_string_list(payload.get("review_suggestions")),
+            "main_changes": main_changes,
+            "risk_analysis": risk_analysis,
+            "review_suggestions": review_suggestions,
             "overall_risk_level": overall_risk_level,
             "confidence": confidence,
         }
@@ -389,7 +413,7 @@ class LLMReviewer:
         total = int(risk_summary.get("total", 0) or 0)
         high = int(risk_summary.get("high", 0) or 0)
         if total == 0:
-            return f"PR《{title}》当前没有命中明显高风险规则，但仍建议结合业务上下文确认关键路径是否完整覆盖。"
+            return f"PR《{title}》当前未命中明显高风险规则，但仍建议结合业务上下文确认关键路径、异常处理和回归覆盖是否完整。"
         return f"PR《{title}》命中了 {total} 项风险提示，其中 High 风险 {high} 项，建议优先核查高影响代码路径。"
 
     @staticmethod
@@ -410,8 +434,8 @@ class LLMReviewer:
             summary = f"PR《{title}》已完成规则审查。当前未发现明显高风险信号，但仍建议人工确认关键业务路径。"
         else:
             summary = (
-                f"PR《{title}》已完成规则审查。当前识别到 {total} 项风险提示，"
-                f"其中 High 风险 {high_count} 项；AI 总结不可用，建议按规则结果继续人工复核。"
+                f"PR《{title}》已完成规则审查，当前识别到 {total} 项风险提示，"
+                f"其中 High 风险 {high_count} 项。AI 总结不可用，建议按规则结果继续人工复核。"
             )
 
         return {
