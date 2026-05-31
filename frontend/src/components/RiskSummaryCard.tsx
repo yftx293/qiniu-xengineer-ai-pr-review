@@ -11,7 +11,7 @@ export default function RiskSummaryCard({ riskSummary, className = "" }: RiskSum
   return (
     <section className={sectionClassName}>
       <div className="card-caption">Risk Matrix</div>
-      <h3>Risk Overview</h3>
+      <h3>风险概览</h3>
 
       <div className="summary-grid">
         <div className="summary-tile summary-high">
@@ -34,8 +34,8 @@ export default function RiskSummaryCard({ riskSummary, className = "" }: RiskSum
 
       <p className={riskSummary.has_blocking_risk ? "blocking blocking-yes" : "blocking"}>
         {riskSummary.has_blocking_risk
-          ? "Blocking risk exists. Review High severity findings first."
-          : "No blocking risk was found, but manual review is still recommended."}
+          ? "存在阻断级风险，建议优先复核 High 风险项后再决定是否合并。"
+          : "当前未看到阻断级风险，但仍建议结合业务上下文继续人工复核。"}
       </p>
     </section>
   );

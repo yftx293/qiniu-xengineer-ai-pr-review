@@ -34,37 +34,37 @@ export default function PrInfoCard({ pr, className = "" }: PrInfoCardProps) {
         <span className={`state-pill state-${pr.state.toLowerCase()}`}>{pr.state}</span>
       </div>
 
-      <h3>PR Overview</h3>
+      <h3>PR 基本信息</h3>
 
       <div className="kv-grid">
         <div>
-          <span className="k">Title</span>
+          <span className="k">标题</span>
           <span className="v">{pr.title}</span>
         </div>
         <div>
-          <span className="k">Author</span>
+          <span className="k">作者</span>
           <span className="v">{pr.author}</span>
         </div>
         <div>
-          <span className="k">Branch Flow</span>
+          <span className="k">分支流向</span>
           <span className="v">
             {pr.head_branch} → {pr.base_branch}
           </span>
         </div>
         <div>
-          <span className="k">Changed Files</span>
+          <span className="k">变更文件数</span>
           <span className="v">{pr.changed_files}</span>
         </div>
         <div>
-          <span className="k">Created At</span>
+          <span className="k">创建时间</span>
           <span className="v">{formatDate(pr.created_at)}</span>
         </div>
         <div>
-          <span className="k">Updated At</span>
+          <span className="k">更新时间</span>
           <span className="v">{formatDate(pr.updated_at)}</span>
         </div>
         <div>
-          <span className="k">Code Delta</span>
+          <span className="k">代码增减</span>
           <span className="v">
             +{pr.additions} / -{pr.deletions}
           </span>
@@ -72,7 +72,7 @@ export default function PrInfoCard({ pr, className = "" }: PrInfoCardProps) {
       </div>
 
       <a href={pr.html_url} target="_blank" rel="noreferrer" className="link">
-        Open on GitHub
+        在 GitHub 中打开
       </a>
     </section>
   );
